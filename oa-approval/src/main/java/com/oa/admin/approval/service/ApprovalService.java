@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -38,10 +40,13 @@ public class ApprovalService extends ServiceImpl<BizApprovalInstanceMapper, BizA
 
         long userId = StpUtil.getLoginIdAsLong();
 
-        // Start Flowable process (simplified - uses pre-deployed process definition)
-        var processInstance = runtimeService.startProcessInstanceById(
-            template.getFlowableProcessDefinitionId(),
-            String.valueOf(userId) // business key
+        // Start Flowable process by template key (matching BPMN process id)
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("initiator", userId);
+        var processInstance = runtimeService.startProcessInstanceByKey(
+            template.getTemplateKey(),
+            String.valueOf(userId), // business key
+            variables
         );
 
         // Create business instance

@@ -30,10 +30,7 @@ public class SysPermissionService extends ServiceImpl<SysPermissionMapper, SysPe
     private List<SysPermission> buildTree(List<SysPermission> all, Long parentId) {
         return all.stream()
                 .filter(p -> parentId.equals(p.getParentId()))
-                .peek(p -> {
-                    // Children are not stored as a field on the entity directly;
-                    // callers can use tree() recursively or build a VO.
-                })
+                .peek(p -> p.setChildren(buildTree(all, p.getId())))
                 .collect(Collectors.toList());
     }
 }

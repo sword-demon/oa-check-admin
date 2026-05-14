@@ -38,14 +38,38 @@ public class SysUserController {
     @PostMapping
     @SaCheckPermission("system:user:add")
     public R<SysUser> create(@RequestBody Map<String, Object> body) {
-        // Simplified - use proper DTO in production
-        return R.ok();
+        SysUser user = new SysUser();
+        user.setUsername((String) body.get("username"));
+        user.setNickname((String) body.get("nickname"));
+        user.setPasswordHash((String) body.get("password"));
+        user.setEmail((String) body.get("email"));
+        user.setPhone((String) body.get("phone"));
+        user.setDeptId(body.get("deptId") != null ? Long.valueOf(body.get("deptId").toString()) : null);
+        user.setStatus(body.get("status") != null ? Integer.valueOf(body.get("status").toString()) : 1);
+        @SuppressWarnings("unchecked")
+        List<Long> roleIds = body.get("roleIds") != null ? (List<Long>) body.get("roleIds") : null;
+        userService.create(user, roleIds);
+        user.setPasswordHash(null);
+        return R.ok(user);
     }
 
     @PutMapping("/{id}")
     @SaCheckPermission("system:user:edit")
     public R<SysUser> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return R.ok();
+        SysUser user = new SysUser();
+        user.setId(id);
+        user.setUsername((String) body.get("username"));
+        user.setNickname((String) body.get("nickname"));
+        user.setPasswordHash((String) body.get("password"));
+        user.setEmail((String) body.get("email"));
+        user.setPhone((String) body.get("phone"));
+        user.setDeptId(body.get("deptId") != null ? Long.valueOf(body.get("deptId").toString()) : null);
+        user.setStatus(body.get("status") != null ? Integer.valueOf(body.get("status").toString()) : null);
+        @SuppressWarnings("unchecked")
+        List<Long> roleIds = body.get("roleIds") != null ? (List<Long>) body.get("roleIds") : null;
+        userService.update(user, roleIds);
+        user.setPasswordHash(null);
+        return R.ok(user);
     }
 
     @DeleteMapping("/{id}")

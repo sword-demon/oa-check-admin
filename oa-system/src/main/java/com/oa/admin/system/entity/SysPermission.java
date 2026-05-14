@@ -1,11 +1,14 @@
 package com.oa.admin.system.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.oa.admin.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -22,4 +25,7 @@ public class SysPermission extends BaseEntity {
     private String icon;
     private Integer sort;
     private Integer status;
+
+    @TableField(exist = false)
+    private List<SysPermission> children;
 }
