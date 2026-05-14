@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.oa</groupId>
+        <artifactId>oa-check-admin</artifactId>
+        <version>0.1.0.0</version>
+    </parent>
+    <artifactId>oa-approval</artifactId>
+    <name>OA Approval</name>
+    <description>Approval workflow module with Flowable</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.oa</groupId>
+            <artifactId>oa-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.oa</groupId>
+            <artifactId>oa-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>
