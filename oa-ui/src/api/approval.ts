@@ -27,3 +27,11 @@ export function getTemplates() {
 export function createTemplate(data: Record<string, any>) {
   return request.post('/approval/template', data)
 }
+
+export function getMyCc() {
+  return request.get('/approval/cc')
+}
+
+export function markCcRead(ccId: number) {
+  return request.post(`/approval/cc/${ccId}/read`)
+}

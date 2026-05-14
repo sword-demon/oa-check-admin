@@ -1,28 +1,37 @@
 <template>
   <div>
     <el-card>
-      <template #header>
-        <span>我的已办</span>
-      </template>
-      <el-table :data="[]" empty-text="暂无已办记录">
-        <el-table-column prop="title" label="申请标题" />
-        <el-table-column prop="applicantName" label="申请人" width="120" />
-        <el-table-column prop="templateName" label="审批模板" width="140" />
-        <el-table-column prop="result" label="审批结果" width="120">
+      <template #header>我的已办</template>
+      <el-table :data="tasks" stripe v-loading="loading">
+        <el-table-column prop="taskName" label="审批节点" />
+        <el-table-column prop="taskResult" label="结果" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.result === 1 ? 'success' : 'danger'">
-              {{ row.result === 1 ? '通过' : '拒绝' }}
-            </el-tag>
+            <el-tag :type="row.taskResult === 1 ? 'success' : 'danger'">{{ row.taskResult === 1 ? '通过' : '驳回' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="comment" label="审批意见" />
-        <el-table-column prop="approvedAt" label="审批时间" width="180" />
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default>
-            <el-button link type="primary">查看</el-button>
-          </template>
-        </el-table-column>
+        <el-table-column prop="taskComment" label="审批意见" />
+        <el-table-column prop="completedAt" label="处理时间" />
       </el-table>
     </el-card>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { getMyDone } from '@/api/approval'
+
+const loading = ref(false)
+const tasks = ref<any[]>([])
+
+async function loadData() {
+  loading.value = true
+  try {
+    const data: any = await getMyDone()
+    tasks.value = Array.isArray(data) ? data : []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadData)
+</script>
