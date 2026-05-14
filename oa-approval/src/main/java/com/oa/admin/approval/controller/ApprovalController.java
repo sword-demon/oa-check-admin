@@ -1,8 +1,10 @@
 package com.oa.admin.approval.controller;
 
+import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.entity.BizProcessTemplate;
+import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.common.result.R;
@@ -18,6 +20,7 @@ import java.util.Map;
 public class ApprovalController {
     private final ApprovalService approvalService;
     private final ApprovalTemplateService templateService;
+    private final ApprovalCcService ccService;
 
     @PostMapping("/submit")
     public R<BizApprovalInstance> submit(@RequestBody Map<String, Object> body) {
@@ -61,5 +64,16 @@ public class ApprovalController {
     public R<BizProcessTemplate> createTemplate(@RequestBody BizProcessTemplate template) {
         templateService.save(template);
         return R.ok(template);
+    }
+
+    @GetMapping("/cc")
+    public R<List<BizApprovalCc>> myCc() {
+        return R.ok(ccService.myCc());
+    }
+
+    @PostMapping("/cc/{ccId}/read")
+    public R<Void> markCcRead(@PathVariable Long ccId) {
+        ccService.markRead(ccId);
+        return R.ok();
     }
 }
