@@ -1,0 +1,39 @@
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.gz
+.settings/
+.project
+.classpath
+.idea/
+*.iml
+
+# Node
+node_modules/
+dist/
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Init marker
+.init-done
+
+# GStack
+.gstack/
