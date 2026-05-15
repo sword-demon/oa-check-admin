@@ -51,6 +51,12 @@ const router = createRouter({
           meta: { title: '审批模板' },
         },
         {
+          path: 'approval/template/designer/:id',
+          name: 'FlowDesigner',
+          component: () => import('@/views/approval/template/designer/index.vue'),
+          meta: { title: '流程设计器' },
+        },
+        {
           path: 'approval/my-apply',
           name: 'MyApply',
           component: () => import('@/views/approval/my-apply/index.vue'),
