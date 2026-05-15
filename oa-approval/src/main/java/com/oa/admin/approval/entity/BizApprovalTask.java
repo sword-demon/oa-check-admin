@@ -20,6 +20,8 @@ public class BizApprovalTask extends BaseEntity {
     private String flowableTaskId;
     private Long assigneeUserId;
     private String taskName;
+    /** 1=normal 2=countersign 3=orSign */
+    private Integer taskType;
     /** 1=approved 2=rejected 3=transferred */
     private Integer taskResult;
     private String taskComment;

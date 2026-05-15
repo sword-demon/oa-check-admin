@@ -22,7 +22,11 @@ public enum ErrorCode {
     INSTANCE_NOT_FOUND(3002, "审批实例不存在"),
     TASK_NOT_FOUND(3003, "审批任务不存在"),
     ALREADY_APPROVED(3004, "该任务已处理"),
-    CANNOT_WITHDRAW(3005, "当前状态不允许撤回");
+    CANNOT_WITHDRAW(3005, "当前状态不允许撤回"),
+    BPMN_XML_INVALID(3006, "流程定义XML格式错误"),
+    TEMPLATE_ALREADY_PUBLISHED(3007, "模板已发布, 不可修改"),
+    PROCESS_DEPLOY_FAILED(3008, "流程部署失败"),
+    NODE_CONFIG_MISSING(3009, "流程节点配置缺失");
 
     private final int code;
     private final String msg;

@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class ApprovalService extends ServiceImpl<BizApprovalInstanceMapper, BizA
     private final BizApprovalTaskMapper taskMapper;
     private final RuntimeService runtimeService;
     private final TaskService flowableTaskService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public BizApprovalInstance submit(Long templateId, String title, String formData) {
@@ -43,6 +47,18 @@ public class ApprovalService extends ServiceImpl<BizApprovalInstanceMapper, BizA
         // Start Flowable process by template key (matching BPMN process id)
         Map<String, Object> variables = new HashMap<>();
         variables.put("initiator", userId);
+
+        // Extract form fields as process variables for gateway conditions
+        if (formData != null && !formData.isBlank()) {
+            try {
+                Map<String, Object> formFields = objectMapper.readValue(formData,
+                    new TypeReference<Map<String, Object>>() {});
+                variables.putAll(formFields);
+            } catch (Exception e) {
+                log.warn("Failed to parse formData as JSON for variables: {}", e.getMessage());
+            }
+        }
+
         var processInstance = runtimeService.startProcessInstanceByKey(
             template.getTemplateKey(),
             String.valueOf(userId), // business key
@@ -82,8 +98,10 @@ public class ApprovalService extends ServiceImpl<BizApprovalInstanceMapper, BizA
         task.setCompletedAt(LocalDateTime.now());
         taskMapper.updateById(task);
 
-        // Complete Flowable task
-        flowableTaskService.complete(task.getFlowableTaskId());
+        // Complete Flowable task with approved variable for gateway routing
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("approved", result == 1);
+        flowableTaskService.complete(task.getFlowableTaskId(), variables);
     }
 
     public List<BizApprovalTask> myTodo() {
@@ -137,5 +155,13 @@ public class ApprovalService extends ServiceImpl<BizApprovalInstanceMapper, BizA
 
         // Delete Flowable process instance
         runtimeService.deleteProcessInstance(instance.getFlowableProcessInstanceId(), "发起人撤回");
+    }
+
+    public List<BizApprovalTask> instanceTasks(Long instanceId) {
+        return taskMapper.selectList(
+            new LambdaQueryWrapper<BizApprovalTask>()
+                .eq(BizApprovalTask::getApprovalInstanceId, instanceId)
+                .orderByAsc(BizApprovalTask::getCreatedAt)
+        );
     }
 }

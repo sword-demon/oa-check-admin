@@ -3,6 +3,7 @@ package com.oa.admin.approval.controller;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
+import com.oa.admin.approval.entity.BizProcessNodeConfig;
 import com.oa.admin.approval.entity.BizProcessTemplate;
 import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.service.ApprovalService;
@@ -54,6 +55,12 @@ public class ApprovalController {
         return R.ok();
     }
 
+    // Instance detail
+    @GetMapping("/instance/{instanceId}/tasks")
+    public R<List<BizApprovalTask>> instanceTasks(@PathVariable Long instanceId) {
+        return R.ok(approvalService.instanceTasks(instanceId));
+    }
+
     // Template CRUD
     @GetMapping("/template")
     public R<List<BizProcessTemplate>> listTemplates() {
@@ -64,6 +71,45 @@ public class ApprovalController {
     public R<BizProcessTemplate> createTemplate(@RequestBody BizProcessTemplate template) {
         templateService.save(template);
         return R.ok(template);
+    }
+
+    @PostMapping("/template/{id}/publish")
+    public R<BizProcessTemplate> publishTemplate(@PathVariable Long id) {
+        return R.ok(templateService.publish(id));
+    }
+
+    @GetMapping("/template/{id}/xml")
+    public R<String> getTemplateXml(@PathVariable Long id) {
+        BizProcessTemplate template = templateService.getById(id);
+        String xml = template != null ? template.getBpmnXml() : null;
+        return R.ok(xml);
+    }
+
+    @PutMapping("/template/{id}/xml")
+    public R<Void> saveTemplateXml(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        BizProcessTemplate template = templateService.getById(id);
+        if (template != null) {
+            template.setBpmnXml(body.get("bpmnXml"));
+            templateService.updateById(template);
+        }
+        return R.ok();
+    }
+
+    @GetMapping("/template/{id}/node-config")
+    public R<List<BizProcessNodeConfig>> getNodeConfigs(@PathVariable Long id) {
+        return R.ok(templateService.getNodeConfigs(id));
+    }
+
+    @PutMapping("/template/{id}/node-config")
+    public R<Void> saveNodeConfigs(@PathVariable Long id,
+                                   @RequestBody List<BizProcessNodeConfig> configs) {
+        templateService.saveNodeConfigs(id, configs);
+        return R.ok();
+    }
+
+    @PostMapping("/template/{id}/new-version")
+    public R<BizProcessTemplate> createNewVersion(@PathVariable Long id) {
+        return R.ok(templateService.createNewVersion(id));
     }
 
     @GetMapping("/cc")
