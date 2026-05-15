@@ -1,6 +1,8 @@
 package com.oa.admin.approval.listener;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.oa.admin.approval.enums.ApprovalInstanceStatus;
+import com.oa.admin.approval.enums.ApprovalTaskResult;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
@@ -40,9 +42,9 @@ public class ProcessEndEventListener implements FlowableEventListener {
                     );
 
                     boolean anyRejected = tasks.stream()
-                        .anyMatch(t -> t.getTaskResult() != null && t.getTaskResult() == 2);
+                        .anyMatch(t -> t.getTaskResult() != null && t.getTaskResult().equals(ApprovalTaskResult.REJECTED.getCode()));
 
-                    instance.setStatus(anyRejected ? 3 : 2);
+                    instance.setStatus(anyRejected ? ApprovalInstanceStatus.REJECTED.getCode() : ApprovalInstanceStatus.APPROVED.getCode());
                     instance.setEndAt(LocalDateTime.now());
                     instanceMapper.updateById(instance);
                     log.info("Process completed: instanceId={}, status={}", instance.getId(), anyRejected ? "rejected" : "approved");

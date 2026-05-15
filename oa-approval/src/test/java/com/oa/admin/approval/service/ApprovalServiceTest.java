@@ -1,5 +1,6 @@
 package com.oa.admin.approval.service;
 
+import com.oa.admin.approval.service.impl.ApprovalServiceImpl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oa.admin.approval.entity.BizApprovalInstance;
@@ -52,7 +53,7 @@ class ApprovalServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalService(templateService, taskMapper, runtimeService, flowableTaskService, objectMapper);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, runtimeService, flowableTaskService, objectMapper);
         injectBaseMapper(approvalService, instanceMapper);
     }
 

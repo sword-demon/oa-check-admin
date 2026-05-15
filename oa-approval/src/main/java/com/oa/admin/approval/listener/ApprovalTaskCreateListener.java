@@ -1,5 +1,7 @@
 package com.oa.admin.approval.listener;
 
+import com.oa.admin.approval.constant.FlowableConstants;
+import com.oa.admin.approval.enums.ApprovalTaskType;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
@@ -49,7 +51,6 @@ public class ApprovalTaskCreateListener implements TaskListener {
      * Detect multi-instance task type from task variables.
      * Flowable sets nrOfInstances/nrOfActiveInstances/nrOfCompletedInstances
      * as local variables on tasks within a multi-instance activity.
-     * Returns: 1=normal, 2=countersign (all must approve), 3=orSign (any one approves).
      */
     private int detectTaskType(DelegateTask delegateTask) {
         Object nrOfInstances = delegateTask.getVariableLocal("nrOfInstances");
@@ -57,16 +58,15 @@ public class ApprovalTaskCreateListener implements TaskListener {
             nrOfInstances = delegateTask.getVariable("nrOfInstances");
         }
         if (nrOfInstances == null) {
-            return 1;
+            return ApprovalTaskType.NORMAL.getCode();
         }
-        // Check completion condition stored as process variable
         Object completionCondition = delegateTask.getVariable("completionCondition");
         if (completionCondition != null) {
             String condition = completionCondition.toString();
-            if (condition.contains("nrOfCompletedInstances == 1")) {
-                return 3; // or-sign
+            if (condition.contains(FlowableConstants.UEL_OR_SIGN_CONDITION)) {
+                return ApprovalTaskType.OR_SIGN.getCode();
             }
         }
-        return 2; // countersign (default multi-instance)
+        return ApprovalTaskType.COUNTERSIGN.getCode();
     }
 }

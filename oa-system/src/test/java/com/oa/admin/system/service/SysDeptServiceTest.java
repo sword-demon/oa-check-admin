@@ -1,5 +1,6 @@
 package com.oa.admin.system.service;
 
+import com.oa.admin.system.service.impl.SysDeptServiceImpl;
 import com.oa.admin.system.entity.SysDept;
 import com.oa.admin.system.mapper.SysDeptMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -26,7 +27,7 @@ class SysDeptServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        deptService = new SysDeptService();
+        deptService = new SysDeptServiceImpl();
         injectBaseMapper(deptService, deptMapper);
     }
 

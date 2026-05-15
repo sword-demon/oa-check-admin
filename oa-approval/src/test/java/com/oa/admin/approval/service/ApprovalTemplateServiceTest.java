@@ -1,5 +1,6 @@
 package com.oa.admin.approval.service;
 
+import com.oa.admin.approval.service.impl.ApprovalTemplateServiceImpl;
 import com.oa.admin.approval.entity.BizProcessNodeConfig;
 import com.oa.admin.approval.entity.BizProcessTemplate;
 import com.oa.admin.approval.mapper.BizProcessNodeConfigMapper;
@@ -30,7 +31,7 @@ class ApprovalTemplateServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        templateService = new ApprovalTemplateService(deployService, nodeConfigMapper);
+        templateService = new ApprovalTemplateServiceImpl(deployService, nodeConfigMapper);
         injectBaseMapper(templateService, templateMapper);
     }
 

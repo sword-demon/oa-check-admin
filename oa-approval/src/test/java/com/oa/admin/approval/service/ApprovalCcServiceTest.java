@@ -1,5 +1,6 @@
 package com.oa.admin.approval.service;
 
+import com.oa.admin.approval.service.impl.ApprovalCcServiceImpl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
@@ -29,7 +30,7 @@ class ApprovalCcServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        ccService = new ApprovalCcService();
+        ccService = new ApprovalCcServiceImpl();
         injectBaseMapper(ccService, ccMapper);
     }
 
