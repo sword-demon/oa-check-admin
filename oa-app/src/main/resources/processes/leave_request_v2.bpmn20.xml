@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             targetNamespace="http://www.oa.com/approval">
+
+    <process id="leave_request_v2" name="请假审批V2" isExecutable="true">
+
+        <startEvent id="startEvent" name="开始"/>
+
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="leaderTask"/>
+
+        <!-- Step 1: Team leader approval -->
+        <userTask id="leaderTask" name="组长审批"
+                  flowable:assignee="${assigneeResolver.resolveDeptLeader(initiator)}">
+            <extensionElements>
+                <flowable:taskListener event="create"
+                    delegateExpression="${approvalTaskCreateListener}"/>
+            </extensionElements>
+        </userTask>
+
+        <sequenceFlow id="flow2" sourceRef="leaderTask" targetRef="approveGateway"/>
+
+        <!-- Gateway: check leader approval result -->
+        <exclusiveGateway id="approveGateway" name="审批结果判断"/>
+
+        <sequenceFlow id="flow3" sourceRef="approveGateway" targetRef="conditionGateway">
+            <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="flow4" sourceRef="approveGateway" targetRef="endRejected">
+            <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Gateway: check leave days for conditional routing -->
+        <exclusiveGateway id="conditionGateway" name="天数判断"/>
+
+        <sequenceFlow id="flow5" sourceRef="conditionGateway" targetRef="directorTask">
+            <conditionExpression xsi:type="tFormalExpression">${leave_days != null and leave_days > 3}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="flow6" sourceRef="conditionGateway" targetRef="endApproved">
+            <conditionExpression xsi:type="tFormalExpression">${leave_days == null or leave_days &lt;= 3}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Step 2: Director approval (only if leave_days > 3) -->
+        <userTask id="directorTask" name="总监审批"
+                  flowable:assignee="${assigneeResolver.resolveUpwardDeptLeader(initiator, 1)}">
+            <extensionElements>
+                <flowable:taskListener event="create"
+                    delegateExpression="${approvalTaskCreateListener}"/>
+            </extensionElements>
+        </userTask>
+
+        <sequenceFlow id="flow7" sourceRef="directorTask" targetRef="directorResultGateway"/>
+
+        <!-- Gateway: check director approval result -->
+        <exclusiveGateway id="directorResultGateway" name="总监审批结果"/>
+
+        <sequenceFlow id="flow8" sourceRef="directorResultGateway" targetRef="endApproved">
+            <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="flow9" sourceRef="directorResultGateway" targetRef="endRejected">
+            <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- End events -->
+        <endEvent id="endApproved" name="审批通过"/>
+        <endEvent id="endRejected" name="审批驳回"/>
+
+    </process>
+
+</definitions>

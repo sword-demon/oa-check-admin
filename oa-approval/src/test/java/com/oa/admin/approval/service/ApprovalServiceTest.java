@@ -1,6 +1,9 @@
 package com.oa.admin.approval.service;
 
+import com.oa.admin.approval.service.impl.ApprovalServiceImpl;
+import com.oa.admin.approval.enums.TemplateStatus;
 import cn.dev33.satoken.stp.StpUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.entity.BizProcessTemplate;
@@ -20,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,10 +50,11 @@ class ApprovalServiceTest {
     private TaskService flowableTaskService;
 
     private ApprovalService approvalService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalService(templateService, taskMapper, runtimeService, flowableTaskService);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, runtimeService, flowableTaskService, objectMapper);
         injectBaseMapper(approvalService, instanceMapper);
     }
 
@@ -73,7 +78,7 @@ class ApprovalServiceTest {
         t.setId(id);
         t.setTemplateKey(key);
         t.setTemplateName("Test Template");
-        t.setStatus(1);
+        t.setStatus(TemplateStatus.PUBLISHED.getCode());
         return t;
     }
 
@@ -174,7 +179,56 @@ class ApprovalServiceTest {
             approvalService.approve(1L, 1, "approved");
 
             verify(taskMapper).updateById(any(BizApprovalTask.class));
-            verify(flowableTaskService).complete("flowable-1");
+            verify(flowableTaskService).complete(eq("flowable-1"), argThat((java.util.Map<String, Object> vars) ->
+                vars != null && Boolean.TRUE.equals(vars.get("approved"))
+            ));
+        }
+    }
+
+    @Test
+    void approve_rejection_passesApprovedFalse() {
+        BizApprovalTask task = buildTask(1L, 1L, null);
+        when(taskMapper.selectById(1L)).thenReturn(task);
+        when(taskMapper.updateById(any(BizApprovalTask.class))).thenReturn(1);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.approve(1L, 2, "rejected");
+
+            verify(flowableTaskService).complete(eq("flowable-1"), argThat((java.util.Map<String, Object> vars) ->
+                vars != null && Boolean.FALSE.equals(vars.get("approved"))
+            ));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void submit_extractsFormFieldsAsVariables() {
+        BizProcessTemplate template = buildTemplate(1L, "leave_request_v2");
+        when(templateService.getById(1L)).thenReturn(template);
+
+        ProcessInstance pi = mock(ProcessInstance.class);
+        when(pi.getId()).thenReturn("proc-456");
+        when(runtimeService.startProcessInstanceByKey(anyString(), anyString(), anyMap()))
+                .thenReturn(pi);
+        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenReturn(1);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.submit(1L, "请假", "{\"leave_days\":5,\"leave_type\":\"sick\"}");
+
+            verify(runtimeService).startProcessInstanceByKey(
+                eq("leave_request_v2"),
+                eq("1"),
+                argThat(vars -> {
+                    Object days = vars.get("leave_days");
+                    Object type = vars.get("leave_type");
+                    return vars.get("initiator").equals(1L)
+                        && days != null && type != null;
+                })
+            );
         }
     }
 

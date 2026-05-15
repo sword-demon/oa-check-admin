@@ -1,5 +1,6 @@
 package com.oa.admin.system.service;
 
+import com.oa.admin.system.service.impl.SysPermissionServiceImpl;
 import com.oa.admin.system.entity.SysPermission;
 import com.oa.admin.system.mapper.SysPermissionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -26,7 +27,7 @@ class SysPermissionServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        permissionService = new SysPermissionService();
+        permissionService = new SysPermissionServiceImpl();
         injectBaseMapper(permissionService, permissionMapper);
     }
 

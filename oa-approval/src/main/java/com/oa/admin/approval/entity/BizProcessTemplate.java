@@ -17,6 +17,9 @@ public class BizProcessTemplate extends BaseEntity {
     private String templateKey;
     private String flowableProcessDefinitionId;
     private String formConfig;
+    private String bpmnXml;
+    private String publishedBpmnXml;
+    private String flowableDeploymentId;
     private Integer version;
     private Integer status;
 }

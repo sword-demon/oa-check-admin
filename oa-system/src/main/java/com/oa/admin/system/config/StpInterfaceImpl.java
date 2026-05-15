@@ -2,6 +2,7 @@ package com.oa.admin.system.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.oa.admin.common.enums.CommonStatus;
 import com.oa.admin.system.entity.SysPermission;
 import com.oa.admin.system.entity.SysRole;
 import com.oa.admin.system.entity.SysRolePermission;
@@ -43,7 +44,7 @@ public class StpInterfaceImpl implements StpInterface {
         return permissionMapper.selectList(
                 new LambdaQueryWrapper<SysPermission>()
                         .in(SysPermission::getId, permIds)
-                        .eq(SysPermission::getStatus, 1)
+                        .eq(SysPermission::getStatus, CommonStatus.ACTIVE.getCode())
         ).stream().map(SysPermission::getPath).collect(Collectors.toList());
     }
 
@@ -56,7 +57,7 @@ public class StpInterfaceImpl implements StpInterface {
         return roleMapper.selectList(
                 new LambdaQueryWrapper<SysRole>()
                         .in(SysRole::getId, roleIds)
-                        .eq(SysRole::getStatus, 1)
+                        .eq(SysRole::getStatus, CommonStatus.ACTIVE.getCode())
         ).stream().map(SysRole::getRoleKey).collect(Collectors.toList());
     }
 

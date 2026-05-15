@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://oa.admin.com/approval">
+
+    <!-- Parallel gateway example: two concurrent approval branches -->
+    <process id="parallel_example" name="Parallel Approval Example" isExecutable="true">
+        <startEvent id="start" name="Start"/>
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="fork"/>
+
+        <parallelGateway id="fork" name="Fork"/>
+        <sequenceFlow id="flow2" sourceRef="fork" targetRef="hrApproval"/>
+        <sequenceFlow id="flow3" sourceRef="fork" targetRef="financeApproval"/>
+
+        <userTask id="hrApproval" name="HR Approval"
+                  flowable:assignee="${assigneeResolver.resolveDeptLeader(initiator)}"/>
+        <sequenceFlow id="flow4" sourceRef="hrApproval" targetRef="join"/>
+
+        <userTask id="financeApproval" name="Finance Approval"
+                  flowable:assignee="${assigneeResolver.resolveUpwardDeptLeader(initiator, 1)}"/>
+        <sequenceFlow id="flow5" sourceRef="financeApproval" targetRef="join"/>
+
+        <parallelGateway id="join" name="Join"/>
+        <sequenceFlow id="flow6" sourceRef="join" targetRef="exclusiveGw"/>
+
+        <exclusiveGateway id="exclusiveGw" name="All Approved?"/>
+        <sequenceFlow id="flow7" sourceRef="exclusiveGw" targetRef="endApproved">
+            <conditionExpression>${approved == true}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow8" sourceRef="exclusiveGw" targetRef="endRejected">
+            <conditionExpression>${approved == false}</conditionExpression>
+        </sequenceFlow>
+
+        <endEvent id="endApproved" name="Approved"/>
+        <endEvent id="endRejected" name="Rejected"/>
+    </process>
+</definitions>
