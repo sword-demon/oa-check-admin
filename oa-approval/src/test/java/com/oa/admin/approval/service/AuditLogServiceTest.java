@@ -1,5 +1,6 @@
 package com.oa.admin.approval.service;
 
+import com.oa.admin.approval.service.impl.AuditLogServiceImpl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.oa.admin.approval.entity.BizAuditLog;
 import com.oa.admin.approval.mapper.BizAuditLogMapper;
@@ -25,7 +26,7 @@ class AuditLogServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        auditLogService = new AuditLogService();
+        auditLogService = new AuditLogServiceImpl();
         injectBaseMapper(auditLogService, auditLogMapper);
     }
 

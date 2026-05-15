@@ -1,5 +1,6 @@
 package com.oa.admin.system.service;
 
+import com.oa.admin.system.service.impl.SysUserServiceImpl;
 import com.oa.admin.system.entity.SysUser;
 import com.oa.admin.system.entity.SysUserRole;
 import com.oa.admin.system.mapper.SysUserMapper;
@@ -31,7 +32,7 @@ class SysUserServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        userService = new SysUserService(userRoleMapper);
+        userService = new SysUserServiceImpl(userRoleMapper);
         injectBaseMapper(userService, userMapper);
     }
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://oa.admin.com/approval">
+
+    <!-- Countersign (会签) example: all assigned users must approve -->
+    <process id="countersign_example" name="Countersign Example" isExecutable="true">
+        <startEvent id="start" name="Start"/>
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="countersignTask"/>
+
+        <userTask id="countersignTask" name="Countersign Approval"
+                  flowable:assignee="${initiator}">
+            <multiInstanceLoopCharacteristics isSequential="false"
+                flowable:collection="assigneeList" flowable:elementVariable="assignee">
+                <completionCondition>${nrOfCompletedInstances == nrOfInstances}</completionCondition>
+            </multiInstanceLoopCharacteristics>
+        </userTask>
+        <sequenceFlow id="flow2" sourceRef="countersignTask" targetRef="exclusiveGw"/>
+
+        <exclusiveGateway id="exclusiveGw" name="All Approved?"/>
+        <sequenceFlow id="flow3" sourceRef="exclusiveGw" targetRef="endApproved">
+            <conditionExpression>${approved == true}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow4" sourceRef="exclusiveGw" targetRef="endRejected">
+            <conditionExpression>${approved == false}</conditionExpression>
+        </sequenceFlow>
+
+        <endEvent id="endApproved" name="Approved"/>
+        <endEvent id="endRejected" name="Rejected"/>
+    </process>
+</definitions>

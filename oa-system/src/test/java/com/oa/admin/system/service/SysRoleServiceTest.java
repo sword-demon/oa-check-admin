@@ -1,5 +1,6 @@
 package com.oa.admin.system.service;
 
+import com.oa.admin.system.service.impl.SysRoleServiceImpl;
 import com.oa.admin.system.entity.SysRole;
 import com.oa.admin.system.entity.SysRoleDept;
 import com.oa.admin.system.entity.SysRolePermission;
@@ -36,7 +37,7 @@ class SysRoleServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        roleService = new SysRoleService(rolePermissionMapper, roleDeptMapper);
+        roleService = new SysRoleServiceImpl(rolePermissionMapper, roleDeptMapper);
         injectBaseMapper(roleService, roleMapper);
     }
 

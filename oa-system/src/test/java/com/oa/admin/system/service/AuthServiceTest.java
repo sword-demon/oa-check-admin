@@ -1,5 +1,6 @@
 package com.oa.admin.system.service;
 
+import com.oa.admin.system.service.impl.AuthServiceImpl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
@@ -27,7 +28,7 @@ class AuthServiceTest {
     private AuthService authService;
 
     private void setupService() throws Exception {
-        authService = new AuthService(userMapper);
+        authService = new AuthServiceImpl(userMapper);
     }
 
     private SysUser buildUser(Long id, String username, String passwordHash, Integer status) {
