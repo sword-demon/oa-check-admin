@@ -29,10 +29,7 @@ public class ApprovalController {
     @SaCheckPermission("approval:submit")
     @PostMapping("/submit")
     public R<BizApprovalInstance> submit(@RequestBody Map<String, Object> body) {
-        if (body.get("templateId") == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR);
-        }
-        Long templateId = Long.valueOf(body.get("templateId").toString());
+        Long templateId = parseLong(body.get("templateId"), "templateId");
         String title = (String) body.get("title");
         String formData = (String) body.get("formData");
         return R.ok(approvalService.submit(templateId, title, formData));
@@ -41,20 +38,19 @@ public class ApprovalController {
     @SaCheckPermission("approval:approve")
     @PostMapping("/task/{taskId}/approve")
     public R<Void> approve(@PathVariable Long taskId, @RequestBody Map<String, Object> body) {
-        if (body.get("result") == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR);
-        }
-        int result = Integer.parseInt(body.get("result").toString());
+        int result = parseInt(body.get("result"), "result");
         String comment = (String) body.get("comment");
         approvalService.approve(taskId, result, comment);
         return R.ok();
     }
 
+    @SaCheckPermission("approval:todo")
     @GetMapping("/my-todo")
     public R<List<BizApprovalTask>> myTodo() {
         return R.ok(approvalService.myTodo());
     }
 
+    @SaCheckPermission("approval:done")
     @GetMapping("/my-done")
     public R<List<BizApprovalTask>> myDone() {
         return R.ok(approvalService.myDone());
@@ -67,7 +63,7 @@ public class ApprovalController {
         return R.ok();
     }
 
-    // Instance detail
+    @SaCheckPermission("approval:instance:view")
     @GetMapping("/instance/{instanceId}/tasks")
     public R<List<BizApprovalTask>> instanceTasks(@PathVariable Long instanceId) {
         return R.ok(approvalService.instanceTasks(instanceId));
@@ -109,6 +105,7 @@ public class ApprovalController {
         return R.ok();
     }
 
+    @SaCheckPermission("approval:template:edit")
     @GetMapping("/template/{id}/node-config")
     public R<List<BizProcessNodeConfig>> getNodeConfigs(@PathVariable Long id) {
         return R.ok(templateService.getNodeConfigs(id));
@@ -128,14 +125,38 @@ public class ApprovalController {
         return R.ok(templateService.createNewVersion(id));
     }
 
+    @SaCheckPermission("approval:cc")
     @GetMapping("/cc")
     public R<List<BizApprovalCc>> myCc() {
         return R.ok(ccService.myCc());
     }
 
+    @SaCheckPermission("approval:cc")
     @PostMapping("/cc/{ccId}/read")
     public R<Void> markCcRead(@PathVariable Long ccId) {
         ccService.markRead(ccId);
         return R.ok();
+    }
+
+    private Long parseLong(Object value, String fieldName) {
+        if (value == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        try {
+            return Long.valueOf(value.toString());
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+    }
+
+    private int parseInt(Object value, String fieldName) {
+        if (value == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
     }
 }

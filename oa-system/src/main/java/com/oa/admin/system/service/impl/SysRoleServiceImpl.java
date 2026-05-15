@@ -11,6 +11,8 @@ import com.oa.admin.system.entity.SysRoleDept;
 import com.oa.admin.system.mapper.SysRoleMapper;
 import com.oa.admin.system.mapper.SysRolePermissionMapper;
 import com.oa.admin.system.mapper.SysRoleDeptMapper;
+import com.oa.admin.common.exception.BusinessException;
+import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.system.service.SysRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional
     public void assignDataScope(Long roleId, Integer dataScope, List<Long> deptIds) {
         SysRole role = this.getById(roleId);
+        if (role == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
         role.setDataScope(dataScope);
         this.updateById(role);
 

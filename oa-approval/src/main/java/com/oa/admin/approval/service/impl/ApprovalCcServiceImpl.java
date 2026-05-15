@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
 import com.oa.admin.approval.service.ApprovalCcService;
+import com.oa.admin.common.exception.BusinessException;
+import com.oa.admin.common.result.ErrorCode;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,7 +27,14 @@ public class ApprovalCcServiceImpl extends ServiceImpl<BizApprovalCcMapper, BizA
     @Override
     public void markRead(Long ccId) {
         BizApprovalCc cc = this.getById(ccId);
-        if (cc != null && cc.getReadAt() == null) {
+        if (cc == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        long userId = StpUtil.getLoginIdAsLong();
+        if (!cc.getCcUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (cc.getReadAt() == null) {
             cc.setReadAt(LocalDateTime.now());
             this.updateById(cc);
         }
@@ -33,6 +42,9 @@ public class ApprovalCcServiceImpl extends ServiceImpl<BizApprovalCcMapper, BizA
 
     @Override
     public void createCc(Long instanceId, List<Long> ccUserIds, String reason) {
+        if (ccUserIds == null || ccUserIds.isEmpty()) {
+            return;
+        }
         ccUserIds.forEach(userId -> {
             BizApprovalCc cc = new BizApprovalCc();
             cc.setApprovalInstanceId(instanceId);

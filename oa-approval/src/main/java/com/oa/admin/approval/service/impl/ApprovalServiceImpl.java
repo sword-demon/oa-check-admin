@@ -88,6 +88,13 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
     @Override
     @Transactional
     public void approve(Long taskId, int result, String comment) {
+        ApprovalTaskResult taskResult;
+        try {
+            taskResult = ApprovalTaskResult.of(result);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+
         BizApprovalTask task = taskMapper.selectById(taskId);
         if (task == null) {
             throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
@@ -101,13 +108,13 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        task.setTaskResult(result);
+        task.setTaskResult(taskResult.getCode());
         task.setTaskComment(comment);
         task.setCompletedAt(LocalDateTime.now());
         taskMapper.updateById(task);
 
         Map<String, Object> variables = new HashMap<>();
-        variables.put(FlowableConstants.VAR_APPROVED, result == ApprovalTaskResult.APPROVED.getCode());
+        variables.put(FlowableConstants.VAR_APPROVED, taskResult == ApprovalTaskResult.APPROVED);
         flowableTaskService.complete(task.getFlowableTaskId(), variables);
     }
 

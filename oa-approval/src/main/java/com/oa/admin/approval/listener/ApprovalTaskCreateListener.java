@@ -39,10 +39,19 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
         int taskType = detectTaskType(delegateTask);
 
+        long assigneeUserId;
+        try {
+            assigneeUserId = Long.parseLong(assignee);
+        } catch (NumberFormatException e) {
+            log.error("Invalid assignee format for task {}: expected numeric, got '{}'",
+                delegateTask.getId(), assignee);
+            return;
+        }
+
         BizApprovalTask task = new BizApprovalTask();
         task.setApprovalInstanceId(instance.getId());
         task.setFlowableTaskId(delegateTask.getId());
-        task.setAssigneeUserId(Long.parseLong(assignee));
+        task.setAssigneeUserId(assigneeUserId);
         task.setTaskName(delegateTask.getName());
         task.setTaskType(taskType);
         taskMapper.insert(task);

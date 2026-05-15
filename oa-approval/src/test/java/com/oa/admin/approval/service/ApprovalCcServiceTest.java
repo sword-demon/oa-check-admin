@@ -1,6 +1,8 @@
 package com.oa.admin.approval.service;
 
 import com.oa.admin.approval.service.impl.ApprovalCcServiceImpl;
+import com.oa.admin.common.exception.BusinessException;
+import com.oa.admin.common.result.ErrorCode;
 import cn.dev33.satoken.stp.StpUtil;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
@@ -69,35 +71,66 @@ class ApprovalCcServiceTest {
     void markRead_unreadCc_setsReadAt() {
         BizApprovalCc cc = new BizApprovalCc();
         cc.setId(1L);
+        cc.setCcUserId(10L);
         cc.setReadAt(null);
         when(ccMapper.selectById(1L)).thenReturn(cc);
         when(ccMapper.updateById(any(BizApprovalCc.class))).thenReturn(1);
 
-        ccService.markRead(1L);
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(10L);
 
-        assertNotNull(cc.getReadAt());
-        verify(ccMapper).updateById(any(BizApprovalCc.class));
+            ccService.markRead(1L);
+
+            assertNotNull(cc.getReadAt());
+            verify(ccMapper).updateById(any(BizApprovalCc.class));
+        }
     }
 
     @Test
     void markRead_alreadyReadCc_doesNothing() {
         BizApprovalCc cc = new BizApprovalCc();
         cc.setId(1L);
+        cc.setCcUserId(10L);
         cc.setReadAt(LocalDateTime.now());
         when(ccMapper.selectById(1L)).thenReturn(cc);
 
-        ccService.markRead(1L);
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(10L);
 
-        verify(ccMapper, never()).updateById(any(BizApprovalCc.class));
+            ccService.markRead(1L);
+
+            verify(ccMapper, never()).updateById(any(BizApprovalCc.class));
+        }
     }
 
     @Test
-    void markRead_nonexistentCc_doesNothing() {
+    void markRead_nonexistentCc_throwsNotFound() {
         when(ccMapper.selectById(999L)).thenReturn(null);
 
-        ccService.markRead(999L);
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(10L);
 
-        verify(ccMapper, never()).updateById(any(BizApprovalCc.class));
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> ccService.markRead(999L));
+            assertEquals(ErrorCode.NOT_FOUND.getCode(), ex.getCode());
+        }
+    }
+
+    @Test
+    void markRead_wrongUser_throwsForbidden() {
+        BizApprovalCc cc = new BizApprovalCc();
+        cc.setId(1L);
+        cc.setCcUserId(10L);
+        cc.setReadAt(null);
+        when(ccMapper.selectById(1L)).thenReturn(cc);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(99L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> ccService.markRead(1L));
+            assertEquals(ErrorCode.FORBIDDEN.getCode(), ex.getCode());
+        }
     }
 
     @Test
@@ -107,5 +140,19 @@ class ApprovalCcServiceTest {
         ccService.createCc(100L, List.of(1L, 2L, 3L), "test reason");
 
         verify(ccMapper, times(3)).insert(any(BizApprovalCc.class));
+    }
+
+    @Test
+    void createCc_emptyList_doesNothing() {
+        ccService.createCc(100L, List.of(), "test reason");
+
+        verify(ccMapper, never()).insert(any(BizApprovalCc.class));
+    }
+
+    @Test
+    void createCc_nullList_doesNothing() {
+        ccService.createCc(100L, null, "test reason");
+
+        verify(ccMapper, never()).insert(any(BizApprovalCc.class));
     }
 }
