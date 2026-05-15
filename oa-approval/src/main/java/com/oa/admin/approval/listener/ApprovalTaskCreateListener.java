@@ -22,7 +22,6 @@ public class ApprovalTaskCreateListener implements TaskListener {
         String processInstanceId = delegateTask.getProcessInstanceId();
         String assignee = delegateTask.getAssignee();
 
-        // Find the matching business instance
         BizApprovalInstance instance = instanceMapper.selectOne(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizApprovalInstance>()
                 .eq(BizApprovalInstance::getFlowableProcessInstanceId, processInstanceId)
@@ -32,14 +31,42 @@ public class ApprovalTaskCreateListener implements TaskListener {
             return;
         }
 
+        int taskType = detectTaskType(delegateTask);
+
         BizApprovalTask task = new BizApprovalTask();
         task.setApprovalInstanceId(instance.getId());
         task.setFlowableTaskId(delegateTask.getId());
         task.setAssigneeUserId(Long.parseLong(assignee));
         task.setTaskName(delegateTask.getName());
+        task.setTaskType(taskType);
         taskMapper.insert(task);
 
-        log.info("Created approval task: instanceId={}, taskId={}, assignee={}, name={}",
-            instance.getId(), delegateTask.getId(), assignee, delegateTask.getName());
+        log.info("Created approval task: instanceId={}, taskId={}, assignee={}, name={}, type={}",
+            instance.getId(), delegateTask.getId(), assignee, delegateTask.getName(), taskType);
+    }
+
+    /**
+     * Detect multi-instance task type from task variables.
+     * Flowable sets nrOfInstances/nrOfActiveInstances/nrOfCompletedInstances
+     * as local variables on tasks within a multi-instance activity.
+     * Returns: 1=normal, 2=countersign (all must approve), 3=orSign (any one approves).
+     */
+    private int detectTaskType(DelegateTask delegateTask) {
+        Object nrOfInstances = delegateTask.getVariableLocal("nrOfInstances");
+        if (nrOfInstances == null) {
+            nrOfInstances = delegateTask.getVariable("nrOfInstances");
+        }
+        if (nrOfInstances == null) {
+            return 1;
+        }
+        // Check completion condition stored as process variable
+        Object completionCondition = delegateTask.getVariable("completionCondition");
+        if (completionCondition != null) {
+            String condition = completionCondition.toString();
+            if (condition.contains("nrOfCompletedInstances == 1")) {
+                return 3; // or-sign
+            }
+        }
+        return 2; // countersign (default multi-instance)
     }
 }
