@@ -1,0 +1,29 @@
+package com.oa.admin.common.result;
+
+import lombok.Getter;
+import lombok.AllArgsConstructor;
+
+@Getter
+@AllArgsConstructor
+public enum ErrorCode {
+    // System (10xx)
+    SYSTEM_ERROR(1001, "系统异常"),
+    PARAM_ERROR(1002, "参数校验失败"),
+    NOT_FOUND(1003, "资源不存在"),
+
+    // Auth (20xx)
+    UNAUTHORIZED(2001, "未登录或登录已过期"),
+    FORBIDDEN(2002, "无权限访问"),
+    LOGIN_FAILED(2003, "用户名或密码错误"),
+    TOKEN_EXPIRED(2004, "登录已过期, 请重新登录"),
+
+    // Approval (30xx)
+    TEMPLATE_NOT_FOUND(3001, "审批模板不存在"),
+    INSTANCE_NOT_FOUND(3002, "审批实例不存在"),
+    TASK_NOT_FOUND(3003, "审批任务不存在"),
+    ALREADY_APPROVED(3004, "该任务已处理"),
+    CANNOT_WITHDRAW(3005, "当前状态不允许撤回");
+
+    private final int code;
+    private final String msg;
+}

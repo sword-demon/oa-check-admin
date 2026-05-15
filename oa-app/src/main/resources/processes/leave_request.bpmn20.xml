@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://oa.admin/approval">
+
+    <process id="leave_request" name="请假审批流程" isExecutable="true">
+        <startEvent id="startEvent" name="发起申请" />
+
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="task1" />
+
+        <userTask id="task1" name="组长审批" flowable:assignee="1">
+            <extensionElements>
+                <flowable:taskListener event="create" delegateExpression="${approvalTaskCreateListener}" />
+            </extensionElements>
+        </userTask>
+
+        <sequenceFlow id="flow2" sourceRef="task1" targetRef="task2" />
+
+        <userTask id="task2" name="经理审批" flowable:assignee="1">
+            <extensionElements>
+                <flowable:taskListener event="create" delegateExpression="${approvalTaskCreateListener}" />
+            </extensionElements>
+        </userTask>
+
+        <sequenceFlow id="flow3" sourceRef="task2" targetRef="endEvent" />
+
+        <endEvent id="endEvent" name="流程结束" />
+    </process>
+</definitions>
