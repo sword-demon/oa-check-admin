@@ -1,6 +1,7 @@
 package com.oa.admin.approval.service;
 
 import com.oa.admin.approval.service.impl.ApprovalServiceImpl;
+import com.oa.admin.approval.enums.TemplateStatus;
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oa.admin.approval.entity.BizApprovalInstance;
@@ -77,7 +78,7 @@ class ApprovalServiceTest {
         t.setId(id);
         t.setTemplateKey(key);
         t.setTemplateName("Test Template");
-        t.setStatus(1);
+        t.setStatus(TemplateStatus.PUBLISHED.getCode());
         return t;
     }
 

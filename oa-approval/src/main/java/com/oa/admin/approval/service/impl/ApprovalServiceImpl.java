@@ -12,6 +12,7 @@ import com.oa.admin.approval.constant.ApprovalConstants;
 import com.oa.admin.approval.constant.FlowableConstants;
 import com.oa.admin.approval.enums.ApprovalInstanceStatus;
 import com.oa.admin.approval.enums.ApprovalTaskResult;
+import com.oa.admin.approval.enums.TemplateStatus;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.common.exception.BusinessException;
@@ -46,6 +47,9 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         BizProcessTemplate template = templateService.getById(templateId);
         if (template == null) {
             throw new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND);
+        }
+        if (!template.getStatus().equals(TemplateStatus.PUBLISHED.getCode())) {
+            throw new BusinessException(ErrorCode.TEMPLATE_NOT_PUBLISHED);
         }
 
         long userId = StpUtil.getLoginIdAsLong();

@@ -136,4 +136,24 @@ public class ApprovalTemplateServiceImpl extends ServiceImpl<BizProcessTemplateM
             }
         }
     }
+
+    @Override
+    public String getTemplateXml(Long templateId) {
+        BizProcessTemplate template = this.getById(templateId);
+        return template != null ? template.getBpmnXml() : null;
+    }
+
+    @Override
+    @Transactional
+    public void saveTemplateXml(Long templateId, String bpmnXml) {
+        BizProcessTemplate template = this.getById(templateId);
+        if (template == null) {
+            throw new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND);
+        }
+        if (template.getStatus().equals(TemplateStatus.PUBLISHED.getCode())) {
+            throw new BusinessException(ErrorCode.TEMPLATE_ALREADY_PUBLISHED);
+        }
+        template.setBpmnXml(bpmnXml);
+        this.updateById(template);
+    }
 }

@@ -23,6 +23,10 @@ public class ApprovalTaskCreateListener implements TaskListener {
     public void notify(DelegateTask delegateTask) {
         String processInstanceId = delegateTask.getProcessInstanceId();
         String assignee = delegateTask.getAssignee();
+        if (assignee == null || assignee.isBlank()) {
+            log.warn("Task created without assignee for process: {}", processInstanceId);
+            return;
+        }
 
         BizApprovalInstance instance = instanceMapper.selectOne(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizApprovalInstance>()

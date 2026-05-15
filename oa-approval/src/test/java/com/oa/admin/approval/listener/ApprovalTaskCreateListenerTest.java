@@ -99,6 +99,7 @@ class ApprovalTaskCreateListenerTest {
     @Test
     void notify_noBusinessInstance_skipsInsert() {
         when(delegateTask.getProcessInstanceId()).thenReturn("proc-unknown");
+        when(delegateTask.getAssignee()).thenReturn("10");
         when(instanceMapper.selectOne(any())).thenReturn(null);
 
         listener.notify(delegateTask);

@@ -30,7 +30,8 @@ public enum ErrorCode {
     USER_NOT_FOUND_OR_NO_DEPT(3010, "用户不存在或未分配部门"),
     DEPT_NOT_FOUND_OR_NO_LEADER(3011, "部门不存在或未设置负责人"),
     DEPT_TOP_REACHED(3012, "已到达顶级部门, 无法继续向上"),
-    TARGET_DEPT_NOT_FOUND_OR_NO_LEADER(3013, "目标部门不存在或未设置负责人");
+    TARGET_DEPT_NOT_FOUND_OR_NO_LEADER(3013, "目标部门不存在或未设置负责人"),
+    TEMPLATE_NOT_PUBLISHED(3014, "模板未发布, 无法发起审批");
 
     private final int code;
     private final String msg;

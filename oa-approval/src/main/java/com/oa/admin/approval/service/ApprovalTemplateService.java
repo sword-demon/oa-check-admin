@@ -22,4 +22,8 @@ public interface ApprovalTemplateService extends IService<BizProcessTemplate> {
     List<BizProcessNodeConfig> getNodeConfigs(Long templateId);
 
     void saveNodeConfigs(Long templateId, List<BizProcessNodeConfig> configs);
+
+    String getTemplateXml(Long templateId);
+
+    void saveTemplateXml(Long templateId, String bpmnXml);
 }

@@ -8,7 +8,10 @@ import com.oa.admin.approval.entity.BizProcessTemplate;
 import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
+import com.oa.admin.common.exception.BusinessException;
+import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.common.result.R;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,16 +26,24 @@ public class ApprovalController {
     private final ApprovalTemplateService templateService;
     private final ApprovalCcService ccService;
 
+    @SaCheckPermission("approval:submit")
     @PostMapping("/submit")
     public R<BizApprovalInstance> submit(@RequestBody Map<String, Object> body) {
+        if (body.get("templateId") == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
         Long templateId = Long.valueOf(body.get("templateId").toString());
         String title = (String) body.get("title");
         String formData = (String) body.get("formData");
         return R.ok(approvalService.submit(templateId, title, formData));
     }
 
+    @SaCheckPermission("approval:approve")
     @PostMapping("/task/{taskId}/approve")
     public R<Void> approve(@PathVariable Long taskId, @RequestBody Map<String, Object> body) {
+        if (body.get("result") == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
         int result = Integer.parseInt(body.get("result").toString());
         String comment = (String) body.get("comment");
         approvalService.approve(taskId, result, comment);
@@ -49,6 +60,7 @@ public class ApprovalController {
         return R.ok(approvalService.myDone());
     }
 
+    @SaCheckPermission("approval:withdraw")
     @PostMapping("/{instanceId}/withdraw")
     public R<Void> withdraw(@PathVariable Long instanceId) {
         approvalService.withdraw(instanceId);
@@ -62,36 +74,38 @@ public class ApprovalController {
     }
 
     // Template CRUD
+    @SaCheckPermission("approval:template:list")
     @GetMapping("/template")
     public R<List<BizProcessTemplate>> listTemplates() {
         return R.ok(templateService.list());
     }
 
+    @SaCheckPermission("approval:template:create")
     @PostMapping("/template")
     public R<BizProcessTemplate> createTemplate(@RequestBody BizProcessTemplate template) {
         templateService.save(template);
         return R.ok(template);
     }
 
+    @SaCheckPermission("approval:template:publish")
     @PostMapping("/template/{id}/publish")
     public R<BizProcessTemplate> publishTemplate(@PathVariable Long id) {
         return R.ok(templateService.publish(id));
     }
 
+    @SaCheckPermission("approval:template:edit")
     @GetMapping("/template/{id}/xml")
     public R<String> getTemplateXml(@PathVariable Long id) {
-        BizProcessTemplate template = templateService.getById(id);
-        String xml = template != null ? template.getBpmnXml() : null;
-        return R.ok(xml);
+        return R.ok(templateService.getTemplateXml(id));
     }
 
+    @SaCheckPermission("approval:template:edit")
     @PutMapping("/template/{id}/xml")
     public R<Void> saveTemplateXml(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        BizProcessTemplate template = templateService.getById(id);
-        if (template != null) {
-            template.setBpmnXml(body.get("bpmnXml"));
-            templateService.updateById(template);
+        if (body.get("bpmnXml") == null || body.get("bpmnXml").isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
         }
+        templateService.saveTemplateXml(id, body.get("bpmnXml"));
         return R.ok();
     }
 
@@ -100,6 +114,7 @@ public class ApprovalController {
         return R.ok(templateService.getNodeConfigs(id));
     }
 
+    @SaCheckPermission("approval:template:edit")
     @PutMapping("/template/{id}/node-config")
     public R<Void> saveNodeConfigs(@PathVariable Long id,
                                    @RequestBody List<BizProcessNodeConfig> configs) {
@@ -107,6 +122,7 @@ public class ApprovalController {
         return R.ok();
     }
 
+    @SaCheckPermission("approval:template:create")
     @PostMapping("/template/{id}/new-version")
     public R<BizProcessTemplate> createNewVersion(@PathVariable Long id) {
         return R.ok(templateService.createNewVersion(id));
