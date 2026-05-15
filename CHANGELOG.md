@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0.0] - 2026-05-15
+
+### Added
+
+**高级审批流模式 (Phase 2A/2B)**
+- 条件分支: BPMN 排他网关 + UEL 表达式驱动的动态路由
+- 并行网关: 多任务同时执行, 全部完成才继续
+- 会签 (Countersign): 多人审批, 全部通过才算通过
+- 或签 (Or-Sign): 多人审批, 一人通过即算通过
+- 动态审批人: 支持固定人员/部门主管/角色/发起人自选
+- 模板版本管理: 发布/取消发布/基于已发布版本创建新草稿
+- Flowable 多实例任务自动检测 (TaskType: 普通/会签/或签)
+- Flyway 迁移 V4 (节点配置表 + 模板版本字段)
+
+**代码标准化 (Phase 3)**
+- 业务常量提取: ApprovalConstants, FlowableConstants, TreeConstants
+- 枚举体系: ApprovalInstanceStatus, ApprovalTaskResult, ApprovalTaskType, TemplateStatus, CommonStatus, PermissionType, DataScope
+- Service 接口/实现分离: 所有 Service 提取接口 + ServiceImpl 实现类
+- HikariCP 连接池配置
+
+### Fixed
+
+- 所有审批端点添加 `@SaCheckPermission` 权限注解
+- 提交审批时校验模板必须为 PUBLISHED 状态
+- 审批任务创建监听器增加 assignee null 检查
+- Controller 参数校验 (templateId, result, bpmnXml)
+- BPMN XML 保存委托到 Service 层, 禁止已发布模板直接修改 XML
+
 ## [0.1.0.0] - 2026-05-15
 
 ### Added
