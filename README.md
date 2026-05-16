@@ -134,10 +134,91 @@ oa-check-admin/
 - 动态候选人 (从组织架构选择)
 - 低代码表单设计器
 
-## Phase 3 计划
+## Phase 3: 代码生成器
 
-- CLI 代码生成器 (YAML/DSL → 全套代码)
-- 参考 JHipster JDL 思路, 专注审批 + 权限领域
+从 YAML 定义自动生成后端 CRUD 代码, 参考 JHipster JDL 思路, 专注审批 + 权限领域。
+
+### 快速开始
+
+```bash
+# 1. 定义 YAML (参考 generators/leave-request.yaml)
+# 2. 预览生成内容
+java -jar oa-generator/target/oa-generator-*.jar generators/your-module.yaml --dry-run
+
+# 3. 正式生成
+java -jar oa-generator/target/oa-generator-*.jar generators/your-module.yaml
+```
+
+### 生成内容
+
+每个 Entity 自动生成 6 个文件:
+
+| 文件 | 说明 |
+|------|------|
+| `entity/Xxx.java` | MyBatis-Plus 实体 (继承 BaseEntity) |
+| `mapper/XxxMapper.java` | Mapper 接口 (继承 BaseMapper) |
+| `service/XxxService.java` | Service 接口 (继承 IService) |
+| `service/impl/XxxServiceImpl.java` | Service 实现 (LambdaQueryWrapper 分页) |
+| `controller/XxxController.java` | REST Controller (CRUD + Sa-Token 权限) |
+| `V{N}__xxx.sql` | Flyway 数据库迁移脚本 |
+
+每个 Enum 自动生成 1 个枚举类。
+
+### YAML DSL 示例
+
+```yaml
+global:
+  module: leave
+  tablePrefix: biz_leave_
+  author: your-name
+
+enums:
+  LeaveStatus:
+    type: int
+    values:
+      DRAFT:    { code: 0, label: "草稿" }
+      APPROVED: { code: 1, label: "已通过" }
+
+entities:
+  - LeaveRequest:
+      tableName: biz_leave_request
+      comment: 请假申请
+      fields:
+        - name: title
+          type: String
+          sqlType: VARCHAR(200)
+          nullable: false
+          comment: 标题
+          searchable: true
+        - name: status
+          type: Integer
+          sqlType: TINYINT
+          nullable: false
+          defaultValue: "0"
+          comment: 状态
+          searchable: true
+```
+
+### CLI 参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `definitionFile` | YAML 定义文件路径 | (必填) |
+| `-p, --project` | 项目根目录 | 当前目录 |
+| `-m, --target-module` | 目标 Maven 模块 | `oa-app` |
+| `--dry-run` | 仅预览, 不写文件 | false |
+| `--flyway-only` | 只生成 Flyway SQL | false |
+| `--entity` | 只生成指定 Entity | 全部 |
+
+### 支持的字段类型
+
+`String`, `Integer`, `Long`, `BigDecimal`, `Boolean`, `LocalDate`, `LocalDateTime`, `Text`
+
+### 生成后需手动处理
+
+1. 在 `OaAdminApplication.java` 的 `@MapperScan` 中添加新的 mapper 包路径
+2. 在 `sys_permission` 表中插入菜单和按钮权限记录
+3. 创建前端 Vue 页面和路由 (当前不自动生成前端)
 
 ## License
 

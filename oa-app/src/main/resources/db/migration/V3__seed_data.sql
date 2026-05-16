@@ -48,6 +48,22 @@ INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, pat
 (113, 11, '用户查询', 2, 'system:user:query',  4, 1),
 (114, 11, '用户列表', 2, 'system:user:list',   5, 1);
 
+-- Button/API permissions for approval module
+INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, path, sort, status) VALUES
+(210, 20, '审批统计', 3, 'approval:dashboard',        1, 1),
+(211, 21, '模板列表', 3, 'approval:template:list',    1, 1),
+(212, 21, '模板新增', 2, 'approval:template:create',  2, 1),
+(213, 21, '模板编辑', 2, 'approval:template:edit',    3, 1),
+(214, 21, '模板删除', 2, 'approval:template:delete',  4, 1),
+(215, 21, '模板发布', 2, 'approval:template:publish', 5, 1),
+(216, 22, '提交审批', 2, 'approval:submit',           1, 1),
+(217, 22, '审批实例查看', 3, 'approval:instance:view', 2, 1),
+(218, 22, '撤回审批', 2, 'approval:withdraw',         3, 1),
+(219, 23, '待办列表', 3, 'approval:todo',             1, 1),
+(220, 23, '审批处理', 2, 'approval:approve',          2, 1),
+(221, 24, '已办列表', 3, 'approval:done',             1, 1),
+(222, 25, '抄送查看', 3, 'approval:cc',               1, 1);
+
 -- Admin role gets all permissions
 INSERT INTO sys_role_permission (role_id, permission_id)
 SELECT 1, id FROM sys_permission;

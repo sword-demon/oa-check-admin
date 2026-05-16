@@ -23,6 +23,7 @@
         <module>oa-system</module>
         <module>oa-approval</module>
         <module>oa-app</module>
+        <module>oa-generator</module>
     </modules>
 
     <properties>

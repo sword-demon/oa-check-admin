@@ -1,0 +1,73 @@
+global:
+  module: leave
+  tablePrefix: biz_leave_
+  author: wxvirus
+
+enums:
+  LeaveType:
+    type: int
+    values:
+      ANNUAL:   { code: 1, label: "年假" }
+      SICK:     { code: 2, label: "病假" }
+      PERSONAL: { code: 3, label: "事假" }
+  LeaveStatus:
+    type: int
+    values:
+      DRAFT:    { code: 0, label: "草稿" }
+      PENDING:  { code: 1, label: "审批中" }
+      APPROVED: { code: 2, label: "已通过" }
+      REJECTED: { code: 3, label: "已驳回" }
+      CANCELLED: { code: 4, label: "已取消" }
+
+entities:
+  - LeaveRequest:
+      tableName: biz_leave_request
+      comment: 请假申请
+      fields:
+        - name: title
+          type: String
+          sqlType: VARCHAR(200)
+          nullable: false
+          comment: 申请标题
+          searchable: true
+        - name: leaveType
+          type: Integer
+          sqlType: TINYINT
+          nullable: false
+          comment: 请假类型
+          enum: LeaveType
+          searchable: true
+        - name: startTime
+          type: LocalDateTime
+          sqlType: DATETIME
+          nullable: false
+          comment: 开始时间
+        - name: endTime
+          type: LocalDateTime
+          sqlType: DATETIME
+          nullable: false
+          comment: 结束时间
+        - name: reason
+          type: String
+          sqlType: TEXT
+          nullable: true
+          comment: 请假原因
+        - name: applicantUserId
+          type: Long
+          sqlType: BIGINT
+          nullable: false
+          comment: 申请人ID
+          searchable: true
+        - name: status
+          type: Integer
+          sqlType: TINYINT
+          nullable: false
+          defaultValue: "0"
+          comment: 状态
+          enum: LeaveStatus
+          searchable: true
+      indexes:
+        - name: idx_applicant
+          columns: [applicant_user_id]
+        - name: idx_status
+          columns: [status]
