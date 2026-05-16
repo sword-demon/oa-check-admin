@@ -22,11 +22,13 @@ import com.oa.admin.approval.constant.AuditConstants;
 import com.oa.admin.approval.constant.FlowableConstants;
 import com.oa.admin.approval.enums.ApprovalInstanceStatus;
 import com.oa.admin.approval.enums.ApprovalTaskResult;
+import com.oa.admin.approval.enums.NotificationType;
 import com.oa.admin.approval.enums.TemplateStatus;
 import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.approval.service.AuditLogService;
+import com.oa.admin.approval.service.NotificationService;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.common.result.PageResult;
@@ -63,6 +65,7 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
     private final RepositoryService repositoryService;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -164,11 +167,22 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
             AuditConstants.TARGET_TASK, taskId,
             "{\"result\":" + result + ",\"comment\":\"" + (comment != null ? comment : "") + "\"}");
 
+        // Notify initiator about approval/rejection result
+        BizApprovalInstance inst = this.getById(task.getApprovalInstanceId());
+        if (inst != null) {
+            String notifType = taskResult == ApprovalTaskResult.APPROVED
+                ? NotificationType.APPROVED.getCode() : NotificationType.REJECTED.getCode();
+            String notifTitle = taskResult == ApprovalTaskResult.APPROVED
+                ? "审批已通过" : "审批已驳回";
+            notificationService.send(inst.getInitiatorUserId(), notifType, notifTitle,
+                inst.getInstanceTitle() + " - " + notifTitle,
+                "/approval/instance/" + inst.getId());
+        }
+
         // Trigger CC if configured for this node
         if (taskDefinitionKey != null) {
-            BizApprovalInstance instance = this.getById(task.getApprovalInstanceId());
-            if (instance != null) {
-                triggerCcByNodeKey(taskDefinitionKey, instance);
+            if (inst != null) {
+                triggerCcByNodeKey(taskDefinitionKey, inst);
             }
         }
     }
@@ -513,6 +527,11 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_TRANSFER,
             AuditConstants.TARGET_TASK, taskId,
             "{\"targetUserId\":" + targetUserId + ",\"reason\":\"" + (reason != null ? reason : "") + "\"}");
+
+        // Notify target user
+        notificationService.send(targetUserId, NotificationType.TASK_TRANSFERRED.getCode(),
+            "收到转办任务", "任务已转办给您, 请及时处理",
+            "/approval/my-todo");
     }
 
     private void triggerCcByNodeKey(String nodeKey, BizApprovalInstance instance) {
@@ -609,6 +628,13 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
 
         auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_TERMINATE,
             AuditConstants.TARGET_INSTANCE, instanceId, null);
+
+        // Notify initiator
+        notificationService.send(instance.getInitiatorUserId(),
+            NotificationType.INSTANCE_TERMINATED.getCode(),
+            "审批已被管理员终止",
+            instance.getInstanceTitle() + " 已被管理员终止",
+            "/approval/instance/" + instanceId);
     }
 
     @Override

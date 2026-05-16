@@ -88,12 +88,15 @@ class ApprovalServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private NotificationService notificationService;
+
     private ApprovalService approvalService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper, auditLogService);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper, auditLogService, notificationService);
         injectBaseMapper(approvalService, instanceMapper);
     }
 

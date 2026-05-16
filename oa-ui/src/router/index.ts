@@ -104,6 +104,12 @@ const router = createRouter({
           component: () => import('@/views/admin/metrics/index.vue'),
           meta: { title: '流程指标' },
         },
+        {
+          path: 'notification',
+          name: 'Notification',
+          component: () => import('@/views/notification/index.vue'),
+          meta: { title: '站内通知' },
+        },
       ],
     },
   ],
