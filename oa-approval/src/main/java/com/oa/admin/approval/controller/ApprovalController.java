@@ -1,5 +1,7 @@
 package com.oa.admin.approval.controller;
 
+import com.oa.admin.approval.dto.DashboardStatsVO;
+import com.oa.admin.approval.dto.InstanceDiagramVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
@@ -10,6 +12,7 @@ import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
+import com.oa.admin.common.result.PageResult;
 import com.oa.admin.common.result.R;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +72,34 @@ public class ApprovalController {
         return R.ok(approvalService.instanceTasks(instanceId));
     }
 
+    @SaCheckPermission("approval:instance:view")
+    @GetMapping("/my-applications")
+    public R<PageResult<BizApprovalInstance>> myApplications(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        return R.ok(approvalService.myApplications(title, status, page, pageSize));
+    }
+
+    @SaCheckPermission("approval:instance:view")
+    @GetMapping("/instance/{instanceId}")
+    public R<BizApprovalInstance> getInstanceDetail(@PathVariable Long instanceId) {
+        return R.ok(approvalService.getInstanceDetail(instanceId));
+    }
+
+    @SaCheckPermission("approval:instance:view")
+    @GetMapping("/instance/{instanceId}/diagram")
+    public R<InstanceDiagramVO> getInstanceDiagram(@PathVariable Long instanceId) {
+        return R.ok(approvalService.getInstanceDiagram(instanceId));
+    }
+
+    @SaCheckPermission("approval:dashboard")
+    @GetMapping("/dashboard/stats")
+    public R<DashboardStatsVO> dashboardStats() {
+        return R.ok(approvalService.dashboardStats());
+    }
+
     // Template CRUD
     @SaCheckPermission("approval:template:list")
     @GetMapping("/template")
@@ -76,11 +107,32 @@ public class ApprovalController {
         return R.ok(templateService.list());
     }
 
+    @SaCheckPermission("approval:template:list")
+    @GetMapping("/template/{id}")
+    public R<BizProcessTemplate> getTemplate(@PathVariable Long id) {
+        return R.ok(templateService.getById(id));
+    }
+
     @SaCheckPermission("approval:template:create")
     @PostMapping("/template")
     public R<BizProcessTemplate> createTemplate(@RequestBody BizProcessTemplate template) {
         templateService.save(template);
         return R.ok(template);
+    }
+
+    @SaCheckPermission("approval:template:edit")
+    @PutMapping("/template/{id}")
+    public R<BizProcessTemplate> updateTemplate(@PathVariable Long id, @RequestBody BizProcessTemplate template) {
+        template.setId(id);
+        templateService.updateById(template);
+        return R.ok(template);
+    }
+
+    @SaCheckPermission("approval:template:delete")
+    @DeleteMapping("/template/{id}")
+    public R<Void> deleteTemplate(@PathVariable Long id) {
+        templateService.removeById(id);
+        return R.ok();
     }
 
     @SaCheckPermission("approval:template:publish")
