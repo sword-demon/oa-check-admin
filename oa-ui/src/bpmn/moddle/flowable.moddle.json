@@ -1,0 +1,47 @@
+{
+  "name": "Flowable",
+  "uri": "http://flowable.org/bpmn",
+  "prefix": "flowable",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "TaskListener",
+      "isAbstract": true,
+      "superClass": ["Element"],
+      "properties": [
+        { "name": "id", "isAttr": true, "type": "String" },
+        { "name": "event", "isAttr": true, "type": "String" },
+        { "name": "delegateExpression", "isAttr": true, "type": "String" },
+        { "name": "expression", "isAttr": true, "type": "String" },
+        { "name": "class", "isAttr": true, "type": "String" }
+      ]
+    },
+    {
+      "name": "ExtensionElements",
+      "isAbstract": true,
+      "superClass": ["Element"],
+      "meta": {
+        "allowedIn": ["bpmn:UserTask"]
+      },
+      "properties": [
+        { "name": "values", "type": "TaskListener", "isMany": true }
+      ]
+    },
+    {
+      "name": "InOutBinding",
+      "superClass": ["Element"],
+      "properties": [
+        { "name": "source", "isAttr": true, "type": "String" },
+        { "name": "sourceExpression", "isAttr": true, "type": "String" },
+        { "name": "target", "isAttr": true, "type": "String" },
+        { "name": "businessKey", "isAttr": true, "type": "String" },
+        { "name": "local", "isAttr": true, "type": "boolean", "default": false }
+      ]
+    }
+  ],
+  "emumerations": [],
+  "prefixes": {}
+}

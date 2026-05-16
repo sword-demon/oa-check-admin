@@ -69,7 +69,15 @@ describe('approval API', () => {
     const { getTemplates } = await import('@/api/approval')
 
     await getTemplates()
-    expect(mockGet).toHaveBeenCalledWith('/approval/template')
+    expect(mockGet).toHaveBeenCalledWith('/approval/template', { params: undefined })
+  })
+
+  it('getTemplates passes pagination params', async () => {
+    mockGet.mockResolvedValue([])
+    const { getTemplates } = await import('@/api/approval')
+
+    await getTemplates({ page: 2, size: 20 })
+    expect(mockGet).toHaveBeenCalledWith('/approval/template', { params: { page: 2, size: 20 } })
   })
 
   it('createTemplate calls POST /approval/template', async () => {
@@ -94,5 +102,52 @@ describe('approval API', () => {
 
     await markCcRead(5)
     expect(mockPost).toHaveBeenCalledWith('/approval/cc/5/read')
+  })
+
+  it('getMyApplications calls GET /approval/my-applications with params', async () => {
+    mockGet.mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 10 })
+    const { getMyApplications } = await import('@/api/approval')
+
+    await getMyApplications({ title: 'test', status: 1, page: 1, pageSize: 10 })
+
+    expect(mockGet).toHaveBeenCalledWith('/approval/my-applications', {
+      params: { title: 'test', status: 1, page: 1, pageSize: 10 },
+    })
+  })
+
+  it('getInstanceDetail calls GET /approval/instance/:id', async () => {
+    mockGet.mockResolvedValue({ id: 1, instanceTitle: 'Test' })
+    const { getInstanceDetail } = await import('@/api/approval')
+
+    await getInstanceDetail(42)
+
+    expect(mockGet).toHaveBeenCalledWith('/approval/instance/42')
+  })
+
+  it('getInstanceTasks calls GET /approval/instance/:id/tasks', async () => {
+    mockGet.mockResolvedValue([])
+    const { getInstanceTasks } = await import('@/api/approval')
+
+    await getInstanceTasks(7)
+
+    expect(mockGet).toHaveBeenCalledWith('/approval/instance/7/tasks')
+  })
+
+  it('getInstanceDiagram calls GET /approval/instance/:id/diagram', async () => {
+    mockGet.mockResolvedValue({ bpmnXml: '', completedNodeIds: [], currentNodeIds: [] })
+    const { getInstanceDiagram } = await import('@/api/approval')
+
+    await getInstanceDiagram(3)
+
+    expect(mockGet).toHaveBeenCalledWith('/approval/instance/3/diagram')
+  })
+
+  it('getDashboardStats calls GET /approval/dashboard/stats', async () => {
+    mockGet.mockResolvedValue({ todoCount: 0, doneCount: 0, templateCount: 0, unreadCcCount: 0, recentActivities: [] })
+    const { getDashboardStats } = await import('@/api/approval')
+
+    await getDashboardStats()
+
+    expect(mockGet).toHaveBeenCalledWith('/approval/dashboard/stats')
   })
 })

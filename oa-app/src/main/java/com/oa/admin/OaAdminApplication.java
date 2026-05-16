@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  */
 @SpringBootApplication
 @EnableTransactionManagement
-@MapperScan({"com.oa.admin.system.mapper", "com.oa.admin.approval.mapper"})
+@MapperScan({"com.oa.admin.system.mapper", "com.oa.admin.approval.mapper", "com.oa.admin.leave.mapper"})
 public class OaAdminApplication {
     public static void main(String[] args) {
         SpringApplication.run(OaAdminApplication.class, args);

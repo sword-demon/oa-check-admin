@@ -1,6 +1,7 @@
 package com.oa.admin.approval.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.oa.admin.approval.dto.CcVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.List;
 public interface ApprovalCcService extends IService<BizApprovalCc> {
 
     List<BizApprovalCc> myCc();
+
+    List<CcVO> myCcWithDetails();
 
     void markRead(Long ccId);
 
