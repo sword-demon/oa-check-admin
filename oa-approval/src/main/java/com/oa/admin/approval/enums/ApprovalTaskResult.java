@@ -8,7 +8,8 @@ import lombok.AllArgsConstructor;
 public enum ApprovalTaskResult {
     APPROVED(1),
     REJECTED(2),
-    TRANSFERRED(3);
+    TRANSFERRED(3),
+    CANCELLED(4);
 
     private final int code;
 

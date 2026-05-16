@@ -95,17 +95,17 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import type { reactive as _reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplates, createTemplate } from '@/api/approval'
+import type { ProcessTemplate } from '@/types'
 import { publishTemplate, createNewVersion, deleteTemplate, updateTemplate } from '@/api/template'
 import { TEMPLATE_STATUS, TEMPLATE_STATUS_LABEL_MAP } from '@/bpmn/constants'
 
 const router = useRouter()
 
 const loading = ref(false)
-const templates = ref<any[]>([])
+const templates = ref<ProcessTemplate[]>([])
 const dialogVisible = ref(false)
 const pagination = reactive({ page: 1, size: 10, total: 0 })
 const editing = ref<any>(null)
@@ -114,14 +114,9 @@ const form = reactive({ templateName: '', templateKey: '', formConfig: '' })
 async function loadData() {
   loading.value = true
   try {
-    const data: any = await getTemplates({ page: pagination.page, size: pagination.size })
-    if (Array.isArray(data)) {
-      templates.value = data
-      pagination.total = data.length
-    } else {
-      templates.value = data?.records ?? data?.list ?? []
-      pagination.total = data?.total ?? templates.value.length
-    }
+    const result = await getTemplates({ page: pagination.page, size: pagination.size })
+    templates.value = result?.list ?? []
+    pagination.total = result?.total ?? 0
   } finally {
     loading.value = false
   }

@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { ApprovalInstance, ApprovalTask, DashboardStats, InstanceDiagram, PageData, ProcessTemplate } from '@/types'
+import type { ApprovalCc, ApprovalInstance, ApprovalTask, DashboardStats, InstanceDiagram, PageData, ProcessTemplate } from '@/types'
 
 export function submitApproval(data: { templateId: number; title: string; formData: string }) {
   return request.post<never, ApprovalInstance>('/approval/submit', data)
@@ -22,7 +22,7 @@ export function withdrawInstance(instanceId: number) {
 }
 
 export function getTemplates(params?: { page?: number; size?: number }) {
-  return request.get<never, ProcessTemplate[]>('/approval/template', { params })
+  return request.get<never, PageData<ProcessTemplate>>('/approval/template', { params })
 }
 
 export function createTemplate(data: Record<string, unknown>) {
@@ -30,7 +30,7 @@ export function createTemplate(data: Record<string, unknown>) {
 }
 
 export function getMyCc() {
-  return request.get<never, never>('/approval/cc')
+  return request.get<never, ApprovalCc[]>('/approval/cc')
 }
 
 export function markCcRead(ccId: number) {

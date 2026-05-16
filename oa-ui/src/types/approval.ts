@@ -16,6 +16,7 @@ export enum ApprovalTaskResult {
   APPROVED = 1,
   REJECTED = 2,
   TRANSFERRED = 3,
+  CANCELLED = 4,
 }
 
 export enum TemplateStatus {
@@ -58,6 +59,8 @@ export interface ApprovalTask {
 export interface ApprovalCc {
   id: number
   approvalInstanceId: number
+  instanceTitle?: string
+  instanceStatus?: number
   ccUserId: number
   ccReason: string
   readAt: string | null

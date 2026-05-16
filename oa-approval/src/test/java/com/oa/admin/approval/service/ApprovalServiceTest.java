@@ -12,6 +12,7 @@ import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.entity.BizProcessTemplate;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
+import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
 import com.oa.admin.common.exception.BusinessException;
@@ -72,6 +73,9 @@ class ApprovalServiceTest {
     private BizApprovalCcMapper ccMapper;
 
     @Mock
+    private ApprovalCcService ccService;
+
+    @Mock
     private HistoryService historyService;
 
     @Mock
@@ -82,7 +86,7 @@ class ApprovalServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper);
         injectBaseMapper(approvalService, instanceMapper);
     }
 

@@ -9,6 +9,7 @@ import com.oa.admin.approval.dto.InstanceDiagramVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
+import com.oa.admin.approval.entity.BizProcessNodeConfig;
 import com.oa.admin.approval.entity.BizProcessTemplate;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
@@ -49,6 +50,7 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
     private final ApprovalTemplateService templateService;
     private final BizApprovalTaskMapper taskMapper;
     private final BizApprovalCcMapper ccMapper;
+    private final ApprovalCcService ccService;
     private final RuntimeService runtimeService;
     private final TaskService flowableTaskService;
     private final HistoryService historyService;
@@ -129,7 +131,29 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
 
         Map<String, Object> variables = new HashMap<>();
         variables.put(FlowableConstants.VAR_APPROVED, taskResult == ApprovalTaskResult.APPROVED);
+
+        // Get task definition key before completing (needed for CC lookup)
+        String taskDefinitionKey = null;
+        try {
+            org.flowable.task.api.Task flowableTask = flowableTaskService.createTaskQuery()
+                .taskId(task.getFlowableTaskId())
+                .singleResult();
+            if (flowableTask != null) {
+                taskDefinitionKey = flowableTask.getTaskDefinitionKey();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get task definition key: {}", e.getMessage());
+        }
+
         flowableTaskService.complete(task.getFlowableTaskId(), variables);
+
+        // Trigger CC if configured for this node
+        if (taskDefinitionKey != null) {
+            BizApprovalInstance instance = this.getById(task.getApprovalInstanceId());
+            if (instance != null) {
+                triggerCcByNodeKey(taskDefinitionKey, instance);
+            }
+        }
     }
 
     @Override
@@ -184,6 +208,16 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         this.updateById(instance);
 
         runtimeService.deleteProcessInstance(instance.getFlowableProcessInstanceId(), ApprovalConstants.WITHDRAW_REASON);
+
+        // Clean up orphaned pending tasks
+        tasks.stream()
+            .filter(t -> t.getTaskResult() == null)
+            .forEach(t -> {
+                t.setTaskResult(ApprovalTaskResult.CANCELLED.getCode());
+                t.setTaskComment(ApprovalConstants.WITHDRAW_REASON);
+                t.setCompletedAt(LocalDateTime.now());
+                taskMapper.updateById(t);
+            });
     }
 
     @Override
@@ -319,5 +353,20 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
             .unreadCcCount(unreadCcCount)
             .recentActivities(recentTasks)
             .build();
+    }
+
+    private void triggerCcByNodeKey(String nodeKey, BizApprovalInstance instance) {
+        try {
+            List<BizProcessNodeConfig> configs = templateService.getNodeConfigs(instance.getProcessTemplateId());
+            for (BizProcessNodeConfig config : configs) {
+                if (config.getNodeId().equals(nodeKey) && config.getCcConfig() != null && !config.getCcConfig().isBlank()) {
+                    List<Long> ccUserIds = objectMapper.readValue(config.getCcConfig(),
+                        new TypeReference<List<Long>>() {});
+                    ccService.createCc(instance.getId(), ccUserIds, "审批节点[" + config.getNodeName() + "]完成抄送");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to trigger CC for node {}: {}", nodeKey, e.getMessage());
+        }
     }
 }
