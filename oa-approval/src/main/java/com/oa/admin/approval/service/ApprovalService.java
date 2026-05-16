@@ -1,8 +1,11 @@
 package com.oa.admin.approval.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.oa.admin.approval.dto.DashboardStatsVO;
+import com.oa.admin.approval.dto.InstanceDiagramVO;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
+import com.oa.admin.common.result.PageResult;
 
 import java.util.List;
 
@@ -19,4 +22,12 @@ public interface ApprovalService extends IService<BizApprovalInstance> {
     void withdraw(Long instanceId);
 
     List<BizApprovalTask> instanceTasks(Long instanceId);
+
+    PageResult<BizApprovalInstance> myApplications(String title, Integer status, long page, long pageSize);
+
+    BizApprovalInstance getInstanceDetail(Long instanceId);
+
+    InstanceDiagramVO getInstanceDiagram(Long instanceId);
+
+    DashboardStatsVO dashboardStats();
 }

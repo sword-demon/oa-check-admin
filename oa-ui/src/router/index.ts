@@ -80,6 +80,12 @@ const router = createRouter({
           component: () => import('@/views/approval/cc/index.vue'),
           meta: { title: '抄送给我的' },
         },
+        {
+          path: 'approval/instance/:id',
+          name: 'InstanceDetail',
+          component: () => import('@/views/approval/instance/detail.vue'),
+          meta: { title: '审批详情' },
+        },
       ],
     },
   ],
