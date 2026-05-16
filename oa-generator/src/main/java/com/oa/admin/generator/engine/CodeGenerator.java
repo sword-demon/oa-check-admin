@@ -86,6 +86,14 @@ public class CodeGenerator {
 
             writeOrPreview(javaSrcRoot.resolve("entity/" + entity.getName() + ".java"),
                     templateEngine.render("entity.ftl", dataModel), dryRun);
+            writeOrPreview(javaSrcRoot.resolve("dto/" + entity.getCreateDtoName() + ".java"),
+                    templateEngine.render("createDTO.ftl", dataModel), dryRun);
+            writeOrPreview(javaSrcRoot.resolve("dto/" + entity.getUpdateDtoName() + ".java"),
+                    templateEngine.render("updateDTO.ftl", dataModel), dryRun);
+            writeOrPreview(javaSrcRoot.resolve("dto/" + entity.getQueryDtoName() + ".java"),
+                    templateEngine.render("queryDTO.ftl", dataModel), dryRun);
+            writeOrPreview(javaSrcRoot.resolve("vo/" + entity.getVoName() + ".java"),
+                    templateEngine.render("vo.ftl", dataModel), dryRun);
             writeOrPreview(javaSrcRoot.resolve("mapper/" + entity.getMapperName() + ".java"),
                     templateEngine.render("mapper.ftl", dataModel), dryRun);
             writeOrPreview(javaSrcRoot.resolve("service/" + entity.getServiceName() + ".java"),
@@ -152,6 +160,10 @@ public class CodeGenerator {
     public static class TypeMapperStaticMethods {
         public String getSimpleJavaType(String yamlType) {
             return TypeMapper.getSimpleJavaType(yamlType);
+        }
+
+        public String getImport(String yamlType) {
+            return TypeMapper.getImport(yamlType);
         }
     }
 }

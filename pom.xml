@@ -22,6 +22,7 @@
         <module>oa-common</module>
         <module>oa-system</module>
         <module>oa-approval</module>
+        <module>oa-leave</module>
         <module>oa-app</module>
         <module>oa-generator</module>
     </modules>
@@ -56,6 +57,11 @@
             <dependency>
                 <groupId>com.oa</groupId>
                 <artifactId>oa-approval</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oa</groupId>
+                <artifactId>oa-leave</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

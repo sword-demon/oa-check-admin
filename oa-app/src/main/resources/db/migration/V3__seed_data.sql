@@ -38,7 +38,9 @@ INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, pat
 (22, 20, '我的申请',  1, '/approval/my-apply',     'approval/my-apply/index', 'EditPen', 2, 1),
 (23, 20, '我的待办',  1, '/approval/my-todo',      'approval/my-todo/index',  'List',   3, 1),
 (24, 20, '我的已办',  1, '/approval/my-done',      'approval/my-done/index',  'Finished', 4, 1),
-(25, 20, '抄送给我的', 1, '/approval/cc',          'approval/cc/index',        'Message', 5, 1);
+(25, 20, '抄送给我的', 1, '/approval/cc',          'approval/cc/index',        'Message', 5, 1),
+(30, 0, '请假管理',   1, '/leave',                 '',                         'Calendar', 3, 1),
+(31, 30, '请假申请',  1, '/leave/leave-request',   'leave/leave-request/index', 'EditPen', 1, 1);
 
 -- Button/API permissions for user management
 INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, path, sort, status) VALUES
@@ -63,6 +65,14 @@ INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, pat
 (220, 23, '审批处理', 2, 'approval:approve',          2, 1),
 (221, 24, '已办列表', 3, 'approval:done',             1, 1),
 (222, 25, '抄送查看', 3, 'approval:cc',               1, 1);
+
+-- Button/API permissions for leave module
+INSERT INTO sys_permission (id, parent_id, permission_name, permission_type, path, sort, status) VALUES
+(310, 31, '请假申请列表', 3, 'leave:leave_request:list',   1, 1),
+(311, 31, '请假申请详情', 3, 'leave:leave_request:query',  2, 1),
+(312, 31, '请假申请新增', 2, 'leave:leave_request:add',    3, 1),
+(313, 31, '请假申请编辑', 2, 'leave:leave_request:edit',   4, 1),
+(314, 31, '请假申请删除', 2, 'leave:leave_request:remove', 5, 1);
 
 -- Admin role gets all permissions
 INSERT INTO sys_role_permission (role_id, permission_id)

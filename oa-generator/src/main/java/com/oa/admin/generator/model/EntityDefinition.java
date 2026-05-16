@@ -30,6 +30,22 @@ public class EntityDefinition {
         return name + "Controller";
     }
 
+    public String getCreateDtoName() {
+        return name + "CreateDTO";
+    }
+
+    public String getUpdateDtoName() {
+        return name + "UpdateDTO";
+    }
+
+    public String getQueryDtoName() {
+        return name + "QueryDTO";
+    }
+
+    public String getVoName() {
+        return name + "VO";
+    }
+
     public String getBeanName() {
         return NamingUtils.uncapitalize(name);
     }

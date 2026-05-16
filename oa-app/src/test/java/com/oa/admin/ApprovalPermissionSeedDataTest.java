@@ -29,38 +29,58 @@ class ApprovalPermissionSeedDataTest {
             "controller",
             "ApprovalController.java"
     );
-    private static final Path SEED_DATA = Path.of("src", "main", "resources", "db", "migration", "V3__seed_data.sql");
-    private static final Pattern APPROVAL_PERMISSION_PATTERN = Pattern.compile(
-            "@SaCheckPermission\\(\"(approval:[^\"]+)\"\\)"
+    private static final Path LEAVE_CONTROLLER = Path.of(
+            "..",
+            "oa-leave",
+            "src",
+            "main",
+            "java",
+            "com",
+            "oa",
+            "admin",
+            "leave",
+            "controller",
+            "LeaveRequestController.java"
     );
-    private static final Pattern SEED_APPROVAL_PERMISSION_PATTERN = Pattern.compile("'(approval:[^']+)'");
+    private static final Path SEED_DATA = Path.of("src", "main", "resources", "db", "migration", "V3__seed_data.sql");
 
     @Test
     void seedDataContainsAllApprovalControllerPermissionsAndGrantsAdminRole() throws IOException {
-        Set<String> controllerPermissions = extractPermissions(Files.readString(APPROVAL_CONTROLLER));
-        Set<String> seedPermissions = extractSeedPermissions(Files.readString(SEED_DATA));
-
-        assertFalse(controllerPermissions.isEmpty(), "ApprovalController should declare approval permissions");
-        assertEquals(controllerPermissions, seedPermissions);
-
-        String seedSql = Files.readString(SEED_DATA);
-        int lastApprovalPermission = seedSql.lastIndexOf("'approval:");
-        int adminGrant = seedSql.indexOf("SELECT 1, id FROM sys_permission");
-        assertTrue(adminGrant > lastApprovalPermission, "admin role grant must run after approval permission inserts");
+        assertSeedPermissions(APPROVAL_CONTROLLER, "approval");
     }
 
-    private Set<String> extractPermissions(String source) {
+    @Test
+    void seedDataContainsAllLeaveControllerPermissionsAndGrantsAdminRole() throws IOException {
+        assertSeedPermissions(LEAVE_CONTROLLER, "leave");
+    }
+
+    private void assertSeedPermissions(Path controllerPath, String permissionPrefix) throws IOException {
+        String seedSql = Files.readString(SEED_DATA);
+        Set<String> controllerPermissions = extractPermissions(Files.readString(controllerPath), permissionPrefix);
+        Set<String> seedPermissions = extractSeedPermissions(seedSql, permissionPrefix);
+
+        assertFalse(controllerPermissions.isEmpty(), controllerPath + " should declare " + permissionPrefix + " permissions");
+        assertEquals(controllerPermissions, seedPermissions);
+
+        int lastApprovalPermission = seedSql.lastIndexOf("'" + permissionPrefix + ":");
+        int adminGrant = seedSql.indexOf("SELECT 1, id FROM sys_permission");
+        assertTrue(adminGrant > lastApprovalPermission, "admin role grant must run after " + permissionPrefix + " permission inserts");
+    }
+
+    private Set<String> extractPermissions(String source, String permissionPrefix) {
         Set<String> permissions = new TreeSet<>();
-        Matcher matcher = APPROVAL_PERMISSION_PATTERN.matcher(source);
+        Pattern pattern = Pattern.compile("@SaCheckPermission\\(\"(" + permissionPrefix + ":[^\"]+)\"\\)");
+        Matcher matcher = pattern.matcher(source);
         while (matcher.find()) {
             permissions.add(matcher.group(1));
         }
         return permissions;
     }
 
-    private Set<String> extractSeedPermissions(String seedSql) {
+    private Set<String> extractSeedPermissions(String seedSql, String permissionPrefix) {
         Set<String> permissions = new TreeSet<>();
-        Matcher matcher = SEED_APPROVAL_PERMISSION_PATTERN.matcher(seedSql);
+        Pattern pattern = Pattern.compile("'(" + permissionPrefix + ":[^']+)'");
+        Matcher matcher = pattern.matcher(seedSql);
         while (matcher.find()) {
             permissions.add(matcher.group(1));
         }
