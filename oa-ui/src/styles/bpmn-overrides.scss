@@ -1,0 +1,129 @@
+/* bpmn-js canvas style overrides for DingTalk-like UX */
+
+/* Canvas background */
+.djs-container {
+  background: #fafbfc !important;
+}
+
+/* Palette */
+.djs-palette {
+  width: 60px !important;
+  border-right: 1px solid #e4e7ed !important;
+  background: #fff !important;
+}
+
+.djs-palette .entry {
+  font-size: 12px !important;
+}
+
+.djs-palette .entry:hover {
+  color: var(--el-color-primary) !important;
+}
+
+/* Context pad */
+.djs-context-pad {
+  .entry {
+    border-radius: 4px !important;
+  }
+}
+
+/* Selected element highlight */
+.djs-element.selected .djs-outline {
+  stroke: var(--el-color-primary) !important;
+  stroke-width: 2px !important;
+}
+
+/* Element labels */
+.djs-element-label {
+  font-size: 13px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+}
+
+/* Zoom controls */
+.djs-zoom-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Minimap */
+.djs-minimap {
+  bottom: 20px;
+  left: 20px;
+}
+
+/* Shape defaults */
+.djs-connection .djs-visual {
+  stroke: #b0b5bd !important;
+}
+
+.djs-connection .djs-visual:hover {
+  stroke: var(--el-color-primary) !important;
+}
+
+/* Start event */
+.djs-element-start-event .djs-visual circle {
+  stroke: #52c41a !important;
+  fill: #f6ffed !important;
+}
+
+/* End event */
+.djs-element-end-event .djs-visual circle {
+  stroke: #ff4d4f !important;
+  fill: #fff2f0 !important;
+}
+
+/* User task */
+.djs-element-user-task .djs-visual rect {
+  stroke: var(--el-color-primary) !important;
+  fill: #ecf5ff !important;
+  rx: 8px !important;
+  ry: 8px !important;
+}
+
+/* Gateway */
+.djs-element-gateway .djs-visual polygon {
+  stroke: #faad14 !important;
+  fill: #fffbe6 !important;
+}
+
+/* Exclusive gateway marker (X) */
+.djs-element-exclusive-gateway .djs-visual path {
+  stroke: #faad14 !important;
+}
+
+/* Parallel gateway marker (+) */
+.djs-element-parallel-gateway .djs-visual path {
+  stroke: #faad14 !important;
+}
+
+/* Palette labels in Chinese */
+.djs-palette [data-action="create.start-event"]::after {
+  content: '开始' !important;
+}
+
+.djs-palette [data-action="create.end-event"]::after {
+  content: '结束' !important;
+}
+
+.djs-palette [data-action="create.user-task"]::after {
+  content: '任务' !important;
+}
+
+.djs-palette [data-action="create.exclusive-gateway"]::after {
+  content: '排他' !important;
+}
+
+.djs-palette [data-action="create.parallel-gateway"]::after {
+  content: '并行' !important;
+}
+
+/* Selection box */
+.djs-dragger .djs-visual {
+  opacity: 0.7 !important;
+}
+
+/* Resize handles */
+.djs-resize-handle {
+  fill: var(--el-color-primary) !important;
+}

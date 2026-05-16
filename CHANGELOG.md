@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0.0] - 2026-05-16
+
+### Added
+
+**可视化 BPMN 流程设计器 (Phase 2 Frontend)**
+- bpmn-js 18.x 集成: 可视化拖拽设计审批流程图
+- Flowable Moddle 扩展: TaskListener/ExtensionElements/InOutBinding 类型定义
+- Flowable 命名空间属性透传 (assigneeType, assigneeConfig, multiInstanceType)
+- BPMN 工具函数: generateDefaultXml, extractNodeConfigs, validateProcess, injectTaskListeners
+- 模板 API 层: getTemplateXml, saveTemplateXml, getNodeConfigs, saveNodeConfigs, publishTemplate, createNewVersion
+- 设计器页面三栏布局: 工具栏 + 画布 + 属性面板
+- BpmnCanvas 组件: 支持 Modeler/Viewer 双模式, 容器自适应
+- DesignerToolbar: 保存/发布/撤销/重做/缩放/XML预览/新建版本
+- 属性面板: 开始/结束节点, 用户任务, 网关条件, 审批人, 多实例配置
+- AssigneeConfig: 6 种审批人类型 (固定/部门主管/向上主管/角色/发起人/表达式) + UEL 自动生成
+- MultiInstanceConfig: 普通/会签/或签 + 完成比例滑块 + 自动完成条件
+- ConditionEditor: UEL 条件表达式编辑 + 表单字段下拉提示
+- GatewayProperties: 出口线列表 + 每条线独立条件配置
+- 钉钉风格 CSS 覆盖: 中文标签, 彩色元素 (绿开始/红结束/蓝任务/黄网关)
+- 模板列表增强: 设计/查看按钮, 发布确认, 新建版本, 状态标签, 分页
+- 已发布模板自动切换为只读 BpmnViewer 模式
+- 30 秒自动保存 (防抖) + 页面离开未保存警告
+- 发布前流程校验 (开始/结束/连接/网关出口)
+
+**测试**
+- bpmn-utils.test.ts: 19 tests (generateDefaultXml, extractNodeConfigs, validateProcess, injectTaskListeners)
+- constants.test.ts: 7 tests (node types, assignee types, labels, status)
+- template.test.ts: 9 tests (all API functions)
+- bpmn-composables.test.ts: 13 tests (selection, commandStack, modeler initial state)
+- Total: 67 tests (18 pre-existing + 49 new)
+
+### Changed
+
+- loadTemplateInfo 改用 getTemplate(id) 替代 getTemplates() 全量拉取
+- handleSave 返回 boolean 标记保存是否成功, handlePublish 检查后再发布
+- getTemplates API 新增分页参数 { page, size }
+
 ## [0.2.0.0] - 2026-05-15
 
 ### Added

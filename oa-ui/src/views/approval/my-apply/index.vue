@@ -55,8 +55,8 @@ const templateList = ref<any[]>([])
 const submitDialogVisible = ref(false)
 const submitForm = reactive({ templateId: undefined as number | undefined, title: '', formData: '{}' })
 
-function statusType(status: number) {
-  const map: Record<number, string> = { 1: '', 2: 'success', 3: 'danger', 4: 'info', 5: 'warning' }
+function statusType(status: number): 'primary' | 'success' | 'warning' | 'info' | 'danger' | undefined {
+  const map: Record<number, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = { 1: 'info', 2: 'success', 3: 'danger', 4: 'info', 5: 'warning' }
   return map[status] || 'info'
 }
 

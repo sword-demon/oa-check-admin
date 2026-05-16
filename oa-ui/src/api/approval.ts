@@ -20,8 +20,8 @@ export function withdrawInstance(instanceId: number) {
   return request.post(`/approval/${instanceId}/withdraw`)
 }
 
-export function getTemplates() {
-  return request.get('/approval/template')
+export function getTemplates(params?: { page?: number; size?: number }) {
+  return request.get('/approval/template', { params })
 }
 
 export function createTemplate(data: Record<string, any>) {
