@@ -69,7 +69,15 @@ describe('approval API', () => {
     const { getTemplates } = await import('@/api/approval')
 
     await getTemplates()
-    expect(mockGet).toHaveBeenCalledWith('/approval/template')
+    expect(mockGet).toHaveBeenCalledWith('/approval/template', { params: undefined })
+  })
+
+  it('getTemplates passes pagination params', async () => {
+    mockGet.mockResolvedValue([])
+    const { getTemplates } = await import('@/api/approval')
+
+    await getTemplates({ page: 2, size: 20 })
+    expect(mockGet).toHaveBeenCalledWith('/approval/template', { params: { page: 2, size: 20 } })
   })
 
   it('createTemplate calls POST /approval/template', async () => {
