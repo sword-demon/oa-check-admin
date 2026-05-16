@@ -1,40 +1,32 @@
-import { ref, onUnmounted, type Ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import BpmnViewer from 'bpmn-js/lib/Viewer'
-import flowableModdle from '@/bpmn/moddle/flowable.moddle.json'
 
 export type BpmnInstance = BpmnModeler | BpmnViewer
 
-export function useBpmnModeler(containerRef: Ref<HTMLElement | null>, readOnly = false) {
+export function useBpmnModeler() {
   const modeler = ref<BpmnInstance | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  function createModeler(): BpmnInstance {
-    const options: Record<string, unknown> = {
-      container: containerRef.value!,
-      moddleExtensions: { flowable: flowableModdle },
-    }
-
-    const instance = readOnly ? new BpmnViewer(options) : new BpmnModeler(options)
+  function setModeler(instance: BpmnInstance | null): void {
     modeler.value = instance
-    return instance
   }
 
   async function importXML(xml: string): Promise<void> {
+    if (!modeler.value) return
+
     loading.value = true
     error.value = null
 
     try {
-      const instance = modeler.value || createModeler()
-      const result = await (instance as BpmnModeler).importXML(xml)
+      const result = await (modeler.value as BpmnModeler).importXML(xml)
 
       if (result.warnings.length > 0) {
         console.warn('BPMN import warnings:', result.warnings)
       }
 
-      // Auto-fit canvas to center the diagram
-      const canvas = (instance as BpmnModeler).get('canvas') as any
+      const canvas = (modeler.value as BpmnModeler).get('canvas') as any
       canvas.zoom('fit-viewport', 'auto')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to import BPMN XML'
@@ -92,18 +84,11 @@ export function useBpmnModeler(containerRef: Ref<HTMLElement | null>, readOnly =
     return modeler.value
   }
 
-  onUnmounted(() => {
-    if (modeler.value) {
-      modeler.value.destroy()
-      modeler.value = null
-    }
-  })
-
   return {
     modeler,
     loading,
     error,
-    createModeler,
+    setModeler,
     importXML,
     saveXML,
     createDiagram,

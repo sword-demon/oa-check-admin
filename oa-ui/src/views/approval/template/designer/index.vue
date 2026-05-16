@@ -13,9 +13,9 @@
       @zoom-in="handleZoomIn"
       @zoom-out="handleZoomOut"
       @zoom-fit="handleZoomFit"
-      @preview-xml="showXmlPreview = true"
+      @preview-xml="openXmlPreview"
       @new-version="handleNewVersion"
-      @back="router.push('/approval/template')"
+      @back="handleBack"
     />
 
     <div class="flow-designer__body">
@@ -23,6 +23,7 @@
         <BpmnCanvas
           ref="canvasRef"
           :loading="modelerState.loading.value"
+          :read-only="isPublished"
           @modeler-ready="onModelerReady"
         />
       </div>
@@ -49,17 +50,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DesignerToolbar from './components/DesignerToolbar.vue'
 import BpmnCanvas from './components/BpmnCanvas.vue'
 import PropertiesPanel from './components/PropertiesPanel.vue'
-import { useBpmnModeler } from '@/composables/bpmn/useBpmnModeler'
+import { useBpmnModeler, type BpmnInstance } from '@/composables/bpmn/useBpmnModeler'
 import { useBpmnSelection } from '@/composables/bpmn/useBpmnSelection'
 import { useBpmnCommandStack } from '@/composables/bpmn/useBpmnCommandStack'
-import { getTemplateXml, saveTemplateXml, getNodeConfigs, saveNodeConfigs, publishTemplate, createNewVersion } from '@/api/template'
-import { getTemplates, createTemplate } from '@/api/approval'
+import { getTemplateXml, saveTemplateXml, getNodeConfigs, saveNodeConfigs, publishTemplate, createNewVersion, getTemplate } from '@/api/template'
 import { extractNodeConfigs, validateProcess } from '@/bpmn/bpmn-utils'
 import { TEMPLATE_STATUS } from '@/bpmn/constants'
 
@@ -72,59 +72,96 @@ const templateName = ref('')
 const saving = ref(false)
 const showXmlPreview = ref(false)
 const xmlPreviewContent = ref('')
+const dirty = ref(false)
+const dirtyAfterLoad = ref(false)
 
 const isPublished = computed(() => templateStatus.value === TEMPLATE_STATUS.PUBLISHED)
 
-const canvasContainerRef = ref<HTMLElement | null>(null)
-const modelerState = useBpmnModeler(canvasContainerRef, isPublished.value)
+const modelerState = useBpmnModeler()
 const selection = useBpmnSelection(modelerState.modeler)
 const commandStack = useBpmnCommandStack(modelerState.modeler)
 
 const canvasRef = ref<InstanceType<typeof BpmnCanvas> | null>(null)
 
-function onModelerReady() {
+const ZOOM_STEP = 1.1
+const ZOOM_MAX = 4
+const ZOOM_MIN = 0.2
+const AUTO_SAVE_INTERVAL = 30_000
+
+let autoSaveTimer: ReturnType<typeof setInterval> | null = null
+
+function onModelerReady(modeler: BpmnInstance) {
+  modelerState.setModeler(modeler)
   selection.startListening()
   commandStack.startListening()
+
+  const eventBus = (modeler as any).get('eventBus')
+  if (eventBus) {
+    eventBus.on('commandStack.changed', () => {
+      dirty.value = true
+    })
+  }
+
+  loadTemplate()
+  startAutoSave()
+}
+
+function startAutoSave() {
+  stopAutoSave()
+  autoSaveTimer = setInterval(() => {
+    if (dirty.value && !isPublished.value && !saving.value) {
+      handleSave(true)
+    }
+  }, AUTO_SAVE_INTERVAL)
+}
+
+function stopAutoSave() {
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer)
+    autoSaveTimer = null
+  }
 }
 
 async function loadTemplate() {
   try {
     const xmlData: any = await getTemplateXml(templateId.value)
-    const xml = xmlData as string
+    const xml = typeof xmlData === 'string' ? xmlData : xmlData?.bpmnXml ?? xmlData?.data ?? ''
 
     if (xml) {
+      dirtyAfterLoad.value = true
       await modelerState.importXML(xml)
     } else {
       await modelerState.createDiagram('process', '新流程')
     }
 
-    onModelerReady()
+    dirty.value = false
+    dirtyAfterLoad.value = false
   } catch (err: unknown) {
     ElMessage.error('加载流程失败: ' + (err instanceof Error ? err.message : '未知错误'))
   }
 }
 
 async function loadTemplateInfo() {
+  if (!templateId.value || Number.isNaN(templateId.value)) return
   try {
-    const data: any = await getTemplates()
-    const templates = Array.isArray(data) ? data : (data?.records ?? data?.list ?? [])
-    const template = templates.find((t: any) => t.id === templateId.value)
-    if (template) {
-      templateStatus.value = template.status ?? TEMPLATE_STATUS.DRAFT
-      templateName.value = template.templateName ?? ''
+    const data: any = await getTemplate(templateId.value)
+    if (data) {
+      templateStatus.value = data.status ?? TEMPLATE_STATUS.DRAFT
+      templateName.value = data.templateName ?? ''
     }
   } catch {
-    // Silently ignore - template info is supplementary
+    // Template info is supplementary
   }
 }
 
-async function handleSave() {
+async function handleSave(silent = false): Promise<boolean> {
+  if (saving.value) return false
   saving.value = true
   try {
     const xml = await modelerState.saveXML()
     if (!xml) {
-      ElMessage.error('保存失败: 无法生成 BPMN XML')
-      return
+      if (!silent) ElMessage.error('保存失败: 无法生成 BPMN XML')
+      return false
     }
 
     const configs = extractNodeConfigs(modelerState.modeler.value as any)
@@ -134,9 +171,12 @@ async function handleSave() {
       saveNodeConfigs(templateId.value, configs),
     ])
 
-    ElMessage.success('保存成功')
+    dirty.value = false
+    if (!silent) ElMessage.success('保存成功')
+    return true
   } catch (err: unknown) {
-    ElMessage.error('保存失败: ' + (err instanceof Error ? err.message : '未知错误'))
+    if (!silent) ElMessage.error('保存失败: ' + (err instanceof Error ? err.message : '未知错误'))
+    return false
   } finally {
     saving.value = false
   }
@@ -157,11 +197,17 @@ async function handlePublish() {
       type: 'warning',
     })
 
-    await handleSave()
+    const saved = await handleSave()
+    if (!saved) {
+      ElMessage.error('发布失败: 保存未成功')
+      return
+    }
+
     await publishTemplate(templateId.value)
 
     ElMessage.success('发布成功')
     templateStatus.value = TEMPLATE_STATUS.PUBLISHED
+    dirty.value = false
   } catch (err: unknown) {
     if (err !== 'cancel') {
       ElMessage.error('发布失败: ' + (err instanceof Error ? err.message : '未知错误'))
@@ -180,18 +226,38 @@ async function handleNewVersion() {
   }
 }
 
+async function openXmlPreview() {
+  const xml = await modelerState.saveXML()
+  xmlPreviewContent.value = xml || ''
+  showXmlPreview.value = true
+}
+
+function handleBack() {
+  if (dirty.value) {
+    ElMessageBox.confirm('有未保存的更改, 确认离开?', '提示', {
+      confirmButtonText: '离开',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }).then(() => {
+      router.push('/approval/template')
+    }).catch(() => {})
+  } else {
+    router.push('/approval/template')
+  }
+}
+
 function handleZoomIn() {
   const modeler = modelerState.getModeler()
   if (!modeler) return
   const canvas = (modeler as any).get('canvas')
-  canvas.zoom(Math.min(canvas.zoom() * 1.1, 4))
+  canvas.zoom(Math.min(canvas.zoom() * ZOOM_STEP, ZOOM_MAX))
 }
 
 function handleZoomOut() {
   const modeler = modelerState.getModeler()
   if (!modeler) return
   const canvas = (modeler as any).get('canvas')
-  canvas.zoom(Math.max(canvas.zoom() / 1.1, 0.2))
+  canvas.zoom(Math.max(canvas.zoom() / ZOOM_STEP, ZOOM_MIN))
 }
 
 function handleZoomFit() {
@@ -201,9 +267,22 @@ function handleZoomFit() {
   canvas.zoom('fit-viewport', 'auto')
 }
 
+const _beforeunload = (e: BeforeUnloadEvent) => {
+  if (dirty.value) {
+    e.preventDefault()
+  }
+}
+
 onMounted(() => {
   loadTemplateInfo()
-  loadTemplate()
+  window.addEventListener('beforeunload', _beforeunload)
+})
+
+onBeforeUnmount(() => {
+  stopAutoSave()
+  window.removeEventListener('beforeunload', _beforeunload)
+  selection.stopListening()
+  commandStack.stopListening()
 })
 </script>
 

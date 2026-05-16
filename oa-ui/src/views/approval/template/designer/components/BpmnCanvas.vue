@@ -13,21 +13,23 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import BpmnViewer from 'bpmn-js/lib/Viewer'
+import type { BpmnInstance } from '@/composables/bpmn/useBpmnModeler'
 import flowableModdle from '@/bpmn/moddle/flowable.moddle.json'
 import 'bpmn-js/dist/assets/diagram-js.css'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
 import '@/styles/bpmn-overrides.scss'
 
-defineProps<{
+const props = defineProps<{
   loading?: boolean
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'modeler-ready'): void
+  (e: 'modeler-ready', modeler: BpmnInstance): void
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-let modelerInstance: BpmnModeler | BpmnViewer | null = null
+let modelerInstance: BpmnInstance | null = null
 let resizeObserver: ResizeObserver | null = null
 
 function getModeler() {
@@ -39,13 +41,15 @@ onMounted(async () => {
 
   if (!containerRef.value) return
 
-  // Create the modeler - editable mode by default
-  modelerInstance = new BpmnModeler({
+  const options: Record<string, unknown> = {
     container: containerRef.value,
     moddleExtensions: { flowable: flowableModdle },
-  })
+  }
 
-  // Observe container resize
+  modelerInstance = props.readOnly
+    ? new BpmnViewer(options)
+    : new BpmnModeler(options)
+
   resizeObserver = new ResizeObserver(() => {
     if (modelerInstance) {
       const canvas = (modelerInstance as any).get('canvas')
@@ -57,7 +61,7 @@ onMounted(async () => {
 
   resizeObserver.observe(containerRef.value)
 
-  emit('modeler-ready')
+  emit('modeler-ready', modelerInstance)
 })
 
 onUnmounted(() => {

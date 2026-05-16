@@ -58,6 +58,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @size-change="loadData"
+          @current-change="loadData"
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑模板' : '创建模板'" width="650px" destroy-on-close>
@@ -82,6 +95,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import type { reactive as _reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplates, createTemplate } from '@/api/approval'
@@ -93,14 +107,21 @@ const router = useRouter()
 const loading = ref(false)
 const templates = ref<any[]>([])
 const dialogVisible = ref(false)
+const pagination = reactive({ page: 1, size: 10, total: 0 })
 const editing = ref<any>(null)
 const form = reactive({ templateName: '', templateKey: '', formConfig: '' })
 
 async function loadData() {
   loading.value = true
   try {
-    const data: any = await getTemplates()
-    templates.value = Array.isArray(data) ? data : []
+    const data: any = await getTemplates({ page: pagination.page, size: pagination.size })
+    if (Array.isArray(data)) {
+      templates.value = data
+      pagination.total = data.length
+    } else {
+      templates.value = data?.records ?? data?.list ?? []
+      pagination.total = data?.total ?? templates.value.length
+    }
   } finally {
     loading.value = false
   }
@@ -177,4 +198,5 @@ onMounted(loadData)
 
 <style scoped>
 .toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.pagination-wrapper { display: flex; justify-content: flex-end; margin-top: 15px; }
 </style>
