@@ -265,9 +265,8 @@ describe('useBpmnModeler', () => {
 
   it('returns initial state with null modeler, not loading, no error', async () => {
     const { useBpmnModeler } = await import('@/composables/bpmn/useBpmnModeler')
-    const container = ref<HTMLElement | null>(null)
 
-    const { modeler, loading, error } = useBpmnModeler(container)
+    const { modeler, loading, error } = useBpmnModeler()
 
     expect(modeler.value).toBeNull()
     expect(loading.value).toBe(false)
@@ -276,9 +275,8 @@ describe('useBpmnModeler', () => {
 
   it('getModeler returns null initially', async () => {
     const { useBpmnModeler } = await import('@/composables/bpmn/useBpmnModeler')
-    const container = ref<HTMLElement | null>(null)
 
-    const { getModeler } = useBpmnModeler(container)
+    const { getModeler } = useBpmnModeler()
 
     expect(getModeler()).toBeNull()
   })

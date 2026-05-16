@@ -4,7 +4,7 @@
       <el-radio-group
         :model-value="miType"
         :disabled="readOnly"
-        @update:model-value="handleTypeChange($event)"
+        @update:model-value="handleTypeChange($event as string)"
       >
         <el-radio
           v-for="opt in MULTI_INSTANCE_TYPE_OPTIONS"
@@ -45,7 +45,7 @@
           :max="100"
           :step="10"
           :disabled="readOnly"
-          @update:model-value="completionRatio = $event"
+          @update:model-value="completionRatio = $event as number"
         />
         <span class="multi-instance-config__unit">%</span>
       </el-form-item>
