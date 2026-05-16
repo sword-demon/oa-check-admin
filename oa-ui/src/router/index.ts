@@ -92,6 +92,18 @@ const router = createRouter({
           component: () => import('@/views/admin/audit-log/index.vue'),
           meta: { title: '审计日志' },
         },
+        {
+          path: 'admin/instances',
+          name: 'AdminInstances',
+          component: () => import('@/views/admin/instances/index.vue'),
+          meta: { title: '实例管理' },
+        },
+        {
+          path: 'admin/metrics',
+          name: 'AdminMetrics',
+          component: () => import('@/views/admin/metrics/index.vue'),
+          meta: { title: '流程指标' },
+        },
       ],
     },
   ],

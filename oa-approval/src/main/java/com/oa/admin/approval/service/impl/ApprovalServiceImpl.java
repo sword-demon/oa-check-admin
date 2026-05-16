@@ -4,8 +4,10 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.oa.admin.approval.dto.AdminMetricsVO;
 import com.oa.admin.approval.dto.DashboardStatsVO;
 import com.oa.admin.approval.dto.InstanceDiagramVO;
+import com.oa.admin.approval.dto.InstanceVO;
 import com.oa.admin.approval.dto.TaskVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
@@ -43,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -525,5 +528,171 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         } catch (Exception e) {
             log.warn("Failed to trigger CC for node {}: {}", nodeKey, e.getMessage());
         }
+    }
+
+    // ========== Admin operations ==========
+
+    @Override
+    public PageResult<InstanceVO> adminInstances(String title, Integer status, Long templateId,
+                                                  Long initiatorUserId, String startTime, String endTime,
+                                                  long page, long pageSize) {
+        LambdaQueryWrapper<BizApprovalInstance> wrapper = new LambdaQueryWrapper<>();
+        if (title != null && !title.isBlank()) {
+            wrapper.like(BizApprovalInstance::getInstanceTitle, title);
+        }
+        if (status != null) {
+            wrapper.eq(BizApprovalInstance::getStatus, status);
+        }
+        if (templateId != null) {
+            wrapper.eq(BizApprovalInstance::getProcessTemplateId, templateId);
+        }
+        if (initiatorUserId != null) {
+            wrapper.eq(BizApprovalInstance::getInitiatorUserId, initiatorUserId);
+        }
+        if (startTime != null && !startTime.isBlank()) {
+            wrapper.ge(BizApprovalInstance::getCreatedAt, startTime);
+        }
+        if (endTime != null && !endTime.isBlank()) {
+            wrapper.le(BizApprovalInstance::getCreatedAt, endTime);
+        }
+        wrapper.orderByDesc(BizApprovalInstance::getCreatedAt);
+
+        Page<BizApprovalInstance> result = this.page(new Page<>(page, pageSize), wrapper);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<InstanceVO> vos = result.getRecords().stream().map(inst -> InstanceVO.builder()
+            .id(inst.getId())
+            .processTemplateId(inst.getProcessTemplateId())
+            .instanceTitle(inst.getInstanceTitle())
+            .initiatorUserId(inst.getInitiatorUserId())
+            .status(inst.getStatus())
+            .formData(inst.getFormData())
+            .createdAt(inst.getCreatedAt() != null ? inst.getCreatedAt().format(fmt) : null)
+            .endAt(inst.getEndAt() != null ? inst.getEndAt().format(fmt) : null)
+            .build()
+        ).toList();
+
+        return new PageResult<>(vos, result.getTotal(), page, pageSize);
+    }
+
+    @Override
+    @Transactional
+    public void terminateInstance(Long instanceId) {
+        BizApprovalInstance instance = this.getById(instanceId);
+        if (instance == null) {
+            throw new BusinessException(ErrorCode.INSTANCE_NOT_FOUND);
+        }
+        if (!Integer.valueOf(ApprovalInstanceStatus.PENDING.getCode()).equals(instance.getStatus())) {
+            throw new BusinessException(ErrorCode.CANNOT_TERMINATE);
+        }
+
+        instance.setStatus(ApprovalInstanceStatus.CANCELLED.getCode());
+        instance.setEndAt(LocalDateTime.now());
+        this.updateById(instance);
+
+        try {
+            runtimeService.deleteProcessInstance(instance.getFlowableProcessInstanceId(), "Admin terminated");
+        } catch (Exception e) {
+            log.warn("Failed to delete Flowable process instance for termination: {}", e.getMessage());
+        }
+
+        List<BizApprovalTask> tasks = taskMapper.selectList(
+            new LambdaQueryWrapper<BizApprovalTask>()
+                .eq(BizApprovalTask::getApprovalInstanceId, instanceId)
+                .isNull(BizApprovalTask::getTaskResult)
+        );
+        tasks.forEach(t -> {
+            t.setTaskResult(ApprovalTaskResult.CANCELLED.getCode());
+            t.setTaskComment("管理员终止");
+            t.setCompletedAt(LocalDateTime.now());
+            taskMapper.updateById(t);
+        });
+
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_TERMINATE,
+            AuditConstants.TARGET_INSTANCE, instanceId, null);
+    }
+
+    @Override
+    @Transactional
+    public void reassignTask(Long taskId, Long targetUserId) {
+        BizApprovalTask task = taskMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
+        }
+        if (task.getTaskResult() != null) {
+            throw new BusinessException(ErrorCode.TASK_ALREADY_PROCESSED);
+        }
+        if (targetUserId == null || targetUserId.equals(task.getAssigneeUserId())) {
+            throw new BusinessException(ErrorCode.INVALID_TRANSFER_TARGET);
+        }
+
+        Long originalAssignee = task.getAssigneeUserId();
+        task.setAssigneeUserId(targetUserId);
+        taskMapper.updateById(task);
+
+        flowableTaskService.setAssignee(task.getFlowableTaskId(), String.valueOf(targetUserId));
+
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_REASSIGN,
+            AuditConstants.TARGET_TASK, taskId,
+            "{\"from\":" + originalAssignee + ",\"to\":" + targetUserId + "}");
+    }
+
+    @Override
+    public AdminMetricsVO metrics() {
+        long total = this.count();
+        long pending = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+            .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.PENDING.getCode()));
+        long approved = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+            .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.APPROVED.getCode()));
+        long rejected = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+            .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.REJECTED.getCode()));
+        long withdrawn = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+            .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.WITHDRAWN.getCode()));
+
+        List<BizApprovalInstance> completedInstances = this.list(new LambdaQueryWrapper<BizApprovalInstance>()
+            .isNotNull(BizApprovalInstance::getEndAt)
+            .isNotNull(BizApprovalInstance::getCreatedAt));
+
+        double avgHours = 0;
+        if (!completedInstances.isEmpty()) {
+            double totalHours = completedInstances.stream()
+                .filter(i -> i.getEndAt() != null && i.getCreatedAt() != null)
+                .mapToLong(i -> java.time.Duration.between(i.getCreatedAt(), i.getEndAt()).toMinutes())
+                .average().orElse(0);
+            avgHours = totalHours / 60.0;
+        }
+
+        List<BizProcessTemplate> templates = templateService.list(
+            new LambdaQueryWrapper<BizProcessTemplate>()
+                .eq(BizProcessTemplate::getStatus, TemplateStatus.PUBLISHED.getCode()));
+
+        List<AdminMetricsVO.TemplateMetric> templateMetrics = templates.stream().map(tpl -> {
+            LambdaQueryWrapper<BizApprovalInstance> tplWrapper = new LambdaQueryWrapper<BizApprovalInstance>()
+                .eq(BizApprovalInstance::getProcessTemplateId, tpl.getId());
+            long tplTotal = this.count(tplWrapper);
+            long tplPending = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+                .eq(BizApprovalInstance::getProcessTemplateId, tpl.getId())
+                .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.PENDING.getCode()));
+            long tplApproved = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+                .eq(BizApprovalInstance::getProcessTemplateId, tpl.getId())
+                .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.APPROVED.getCode()));
+            long tplRejected = this.count(new LambdaQueryWrapper<BizApprovalInstance>()
+                .eq(BizApprovalInstance::getProcessTemplateId, tpl.getId())
+                .eq(BizApprovalInstance::getStatus, ApprovalInstanceStatus.REJECTED.getCode()));
+            return AdminMetricsVO.TemplateMetric.builder()
+                .templateId(tpl.getId())
+                .templateName(tpl.getTemplateName())
+                .total(tplTotal).pending(tplPending).approved(tplApproved).rejected(tplRejected)
+                .build();
+        }).toList();
+
+        return AdminMetricsVO.builder()
+            .totalInstances(total)
+            .pendingInstances(pending)
+            .approvedInstances(approved)
+            .rejectedInstances(rejected)
+            .withdrawnInstances(withdrawn)
+            .avgDurationHours(Math.round(avgHours * 100.0) / 100.0)
+            .templateMetrics(templateMetrics)
+            .build();
     }
 }
