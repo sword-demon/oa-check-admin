@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.oa.admin.approval.dto.DashboardStatsVO;
 import com.oa.admin.approval.dto.InstanceDiagramVO;
+import com.oa.admin.approval.dto.TaskVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
@@ -15,6 +16,7 @@ import com.oa.admin.approval.mapper.BizApprovalCcMapper;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
 import com.oa.admin.approval.constant.ApprovalConstants;
+import com.oa.admin.approval.constant.AuditConstants;
 import com.oa.admin.approval.constant.FlowableConstants;
 import com.oa.admin.approval.enums.ApprovalInstanceStatus;
 import com.oa.admin.approval.enums.ApprovalTaskResult;
@@ -22,6 +24,7 @@ import com.oa.admin.approval.enums.TemplateStatus;
 import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
+import com.oa.admin.approval.service.AuditLogService;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.common.result.PageResult;
@@ -56,6 +59,7 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
     private final HistoryService historyService;
     private final RepositoryService repositoryService;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -97,6 +101,10 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         instance.setStatus(ApprovalInstanceStatus.PENDING.getCode());
         instance.setFormData(formData);
         this.save(instance);
+
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_SUBMIT,
+            AuditConstants.TARGET_INSTANCE, instance.getId(),
+            "{\"title\":\"" + title + "\",\"templateId\":" + templateId + "}");
 
         return instance;
     }
@@ -146,6 +154,12 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         }
 
         flowableTaskService.complete(task.getFlowableTaskId(), variables);
+
+        String auditAction = taskResult == ApprovalTaskResult.APPROVED
+            ? AuditConstants.ACTION_APPROVE : AuditConstants.ACTION_REJECT;
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, auditAction,
+            AuditConstants.TARGET_TASK, taskId,
+            "{\"result\":" + result + ",\"comment\":\"" + (comment != null ? comment : "") + "\"}");
 
         // Trigger CC if configured for this node
         if (taskDefinitionKey != null) {
@@ -208,6 +222,9 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         this.updateById(instance);
 
         runtimeService.deleteProcessInstance(instance.getFlowableProcessInstanceId(), ApprovalConstants.WITHDRAW_REASON);
+
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_WITHDRAW,
+            AuditConstants.TARGET_INSTANCE, instanceId, null);
 
         // Clean up orphaned pending tasks
         tasks.stream()
@@ -353,6 +370,146 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
             .unreadCcCount(unreadCcCount)
             .recentActivities(recentTasks)
             .build();
+    }
+
+    @Override
+    public PageResult<TaskVO> myTodoPaged(String title, long page, long pageSize) {
+        long userId = StpUtil.getLoginIdAsLong();
+
+        List<Long> instanceIds = null;
+        if (title != null && !title.isBlank()) {
+            List<BizApprovalInstance> matching = this.list(new LambdaQueryWrapper<BizApprovalInstance>()
+                .like(BizApprovalInstance::getInstanceTitle, title)
+                .select(BizApprovalInstance::getId));
+            instanceIds = matching.stream().map(BizApprovalInstance::getId).toList();
+            if (instanceIds.isEmpty()) {
+                return new PageResult<>(List.of(), 0, page, pageSize);
+            }
+        }
+
+        LambdaQueryWrapper<BizApprovalTask> wrapper = new LambdaQueryWrapper<BizApprovalTask>()
+            .eq(BizApprovalTask::getAssigneeUserId, userId)
+            .isNull(BizApprovalTask::getTaskResult);
+
+        if (instanceIds != null) {
+            wrapper.in(BizApprovalTask::getApprovalInstanceId, instanceIds);
+        }
+        wrapper.orderByDesc(BizApprovalTask::getCreatedAt);
+
+        Page<BizApprovalTask> taskPage = taskMapper.selectPage(new Page<>(page, pageSize), wrapper);
+
+        List<TaskVO> vos = enrichTasksWithInstance(taskPage.getRecords());
+        return new PageResult<>(vos, taskPage.getTotal(), page, pageSize);
+    }
+
+    @Override
+    public PageResult<TaskVO> myDonePaged(String title, long page, long pageSize) {
+        long userId = StpUtil.getLoginIdAsLong();
+
+        List<Long> instanceIds = null;
+        if (title != null && !title.isBlank()) {
+            List<BizApprovalInstance> matching = this.list(new LambdaQueryWrapper<BizApprovalInstance>()
+                .like(BizApprovalInstance::getInstanceTitle, title)
+                .select(BizApprovalInstance::getId));
+            instanceIds = matching.stream().map(BizApprovalInstance::getId).toList();
+            if (instanceIds.isEmpty()) {
+                return new PageResult<>(List.of(), 0, page, pageSize);
+            }
+        }
+
+        LambdaQueryWrapper<BizApprovalTask> wrapper = new LambdaQueryWrapper<BizApprovalTask>()
+            .eq(BizApprovalTask::getAssigneeUserId, userId)
+            .isNotNull(BizApprovalTask::getTaskResult);
+
+        if (instanceIds != null) {
+            wrapper.in(BizApprovalTask::getApprovalInstanceId, instanceIds);
+        }
+        wrapper.orderByDesc(BizApprovalTask::getCompletedAt);
+
+        Page<BizApprovalTask> taskPage = taskMapper.selectPage(new Page<>(page, pageSize), wrapper);
+
+        List<TaskVO> vos = enrichTasksWithInstance(taskPage.getRecords());
+        return new PageResult<>(vos, taskPage.getTotal(), page, pageSize);
+    }
+
+    private List<TaskVO> enrichTasksWithInstance(List<BizApprovalTask> tasks) {
+        if (tasks.isEmpty()) return List.of();
+
+        Set<Long> instIds = tasks.stream()
+            .map(BizApprovalTask::getApprovalInstanceId)
+            .collect(Collectors.toSet());
+
+        Map<Long, BizApprovalInstance> instanceMap = new HashMap<>();
+        this.listByIds(instIds).forEach(inst -> instanceMap.put(inst.getId(), inst));
+
+        return tasks.stream().map(task -> {
+            BizApprovalInstance instance = instanceMap.get(task.getApprovalInstanceId());
+            String summary = null;
+            if (instance != null && instance.getFormData() != null && !instance.getFormData().isBlank()) {
+                summary = instance.getFormData().length() > 100
+                    ? instance.getFormData().substring(0, 100) + "..."
+                    : instance.getFormData();
+            }
+            return TaskVO.builder()
+                .id(task.getId())
+                .approvalInstanceId(task.getApprovalInstanceId())
+                .flowableTaskId(task.getFlowableTaskId())
+                .assigneeUserId(task.getAssigneeUserId())
+                .taskName(task.getTaskName())
+                .taskType(task.getTaskType())
+                .taskResult(task.getTaskResult())
+                .taskComment(task.getTaskComment())
+                .completedAt(task.getCompletedAt())
+                .createdAt(task.getCreatedAt())
+                .instanceTitle(instance != null ? instance.getInstanceTitle() : null)
+                .initiatorUserId(instance != null ? instance.getInitiatorUserId() : null)
+                .instanceStatus(instance != null ? instance.getStatus() : null)
+                .formDataSummary(summary)
+                .build();
+        }).toList();
+    }
+
+    @Override
+    @Transactional
+    public void transfer(Long taskId, Long targetUserId, String reason) {
+        BizApprovalTask task = taskMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
+        }
+        if (task.getTaskResult() != null) {
+            throw new BusinessException(ErrorCode.ALREADY_APPROVED);
+        }
+
+        long userId = StpUtil.getLoginIdAsLong();
+        if (!task.getAssigneeUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (targetUserId == null || targetUserId.equals(userId)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR);
+        }
+
+        // Mark current task as transferred
+        task.setTaskResult(ApprovalTaskResult.TRANSFERRED.getCode());
+        task.setTaskComment(reason);
+        task.setCompletedAt(LocalDateTime.now());
+        taskMapper.updateById(task);
+
+        // Create new task for target user
+        BizApprovalTask newTask = new BizApprovalTask();
+        newTask.setApprovalInstanceId(task.getApprovalInstanceId());
+        newTask.setFlowableTaskId(task.getFlowableTaskId());
+        newTask.setAssigneeUserId(targetUserId);
+        newTask.setTaskName(task.getTaskName());
+        newTask.setTaskType(task.getTaskType());
+        taskMapper.insert(newTask);
+
+        // Reassign in Flowable
+        flowableTaskService.setAssignee(task.getFlowableTaskId(), String.valueOf(targetUserId));
+
+        // Audit
+        auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_TRANSFER,
+            AuditConstants.TARGET_TASK, taskId,
+            "{\"targetUserId\":" + targetUserId + ",\"reason\":\"" + (reason != null ? reason : "") + "\"}");
     }
 
     private void triggerCcByNodeKey(String nodeKey, BizApprovalInstance instance) {

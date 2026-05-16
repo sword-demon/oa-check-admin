@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { ApprovalCc, ApprovalInstance, ApprovalTask, DashboardStats, InstanceDiagram, PageData, ProcessTemplate } from '@/types'
+import type { ApprovalCc, ApprovalInstance, ApprovalTask, DashboardStats, InstanceDiagram, PageData, ProcessTemplate, TaskVO } from '@/types'
 
 export function submitApproval(data: { templateId: number; title: string; formData: string }) {
   return request.post<never, ApprovalInstance>('/approval/submit', data)
@@ -55,4 +55,16 @@ export function getInstanceDiagram(instanceId: number) {
 
 export function getDashboardStats() {
   return request.get<never, DashboardStats>('/approval/dashboard/stats')
+}
+
+export function getMyTodoPaged(params: { title?: string; page: number; pageSize: number }) {
+  return request.get<never, PageData<TaskVO>>('/approval/my-todo/paged', { params })
+}
+
+export function getMyDonePaged(params: { title?: string; page: number; pageSize: number }) {
+  return request.get<never, PageData<TaskVO>>('/approval/my-done/paged', { params })
+}
+
+export function transferTask(taskId: number, data: { targetUserId: number; reason: string }) {
+  return request.post<never, void>(`/approval/task/${taskId}/transfer`, data)
 }

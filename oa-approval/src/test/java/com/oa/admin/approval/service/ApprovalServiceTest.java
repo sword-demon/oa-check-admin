@@ -15,6 +15,8 @@ import com.oa.admin.approval.mapper.BizApprovalCcMapper;
 import com.oa.admin.approval.service.ApprovalCcService;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
+import com.oa.admin.approval.service.AuditLogService;
+import com.oa.admin.approval.constant.AuditConstants;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.common.result.PageResult;
@@ -49,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,12 +85,15 @@ class ApprovalServiceTest {
     @Mock
     private RepositoryService repositoryService;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private ApprovalService approvalService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper, auditLogService);
         injectBaseMapper(approvalService, instanceMapper);
     }
 
@@ -662,6 +669,127 @@ class ApprovalServiceTest {
             assertEquals(2, recent.size());
             assertEquals(10L, recent.get(0).getId());
             assertEquals(20L, recent.get(1).getId());
+        }
+    }
+
+    // ========== audit logging tests ==========
+
+    @Test
+    void submit_createsAuditLogEntry() {
+        BizProcessTemplate template = buildTemplate(1L, "leave_request");
+        when(templateService.getById(1L)).thenReturn(template);
+
+        ProcessInstance pi = mock(ProcessInstance.class);
+        when(pi.getId()).thenReturn("proc-audit-1");
+        when(runtimeService.startProcessInstanceByKey(anyString(), anyString(), anyMap()))
+                .thenReturn(pi);
+        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenReturn(1);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.submit(1L, "Test Title", "{}");
+
+            verify(auditLogService).log(
+                eq(AuditConstants.MODULE_APPROVAL),
+                eq(AuditConstants.ACTION_SUBMIT),
+                eq(AuditConstants.TARGET_INSTANCE),
+                any(),
+                any());
+        }
+    }
+
+    @Test
+    void approve_createsAuditLogEntry() {
+        BizApprovalTask task = buildTask(1L, 1L, null);
+        when(taskMapper.selectById(1L)).thenReturn(task);
+        when(taskMapper.updateById(any(BizApprovalTask.class))).thenReturn(1);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.approve(1L, 1, "approved");
+
+            verify(auditLogService).log(
+                eq(AuditConstants.MODULE_APPROVAL),
+                eq(AuditConstants.ACTION_APPROVE),
+                eq(AuditConstants.TARGET_TASK),
+                eq(1L),
+                any());
+        }
+    }
+
+    @Test
+    void withdraw_createsAuditLogEntry() {
+        BizApprovalInstance instance = new BizApprovalInstance();
+        instance.setId(1L);
+        instance.setInitiatorUserId(1L);
+        instance.setStatus(1);
+        instance.setFlowableProcessInstanceId("proc-withdraw-1");
+        when(instanceMapper.selectById(1L)).thenReturn(instance);
+
+        BizApprovalTask pendingTask = buildTask(1L, 2L, null);
+        when(taskMapper.selectList(any())).thenReturn(List.of(pendingTask));
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.withdraw(1L);
+
+            verify(auditLogService).log(
+                eq(AuditConstants.MODULE_APPROVAL),
+                eq(AuditConstants.ACTION_WITHDRAW),
+                eq(AuditConstants.TARGET_INSTANCE),
+                eq(1L),
+                any());
+        }
+    }
+
+    // ========== transfer tests ==========
+
+    @Test
+    void transfer_validRequest_reassignsTask() {
+        BizApprovalTask task = buildTask(1L, 1L, null);
+        when(taskMapper.selectById(1L)).thenReturn(task);
+        when(taskMapper.updateById(any(BizApprovalTask.class))).thenReturn(1);
+        when(taskMapper.insert(any(BizApprovalTask.class))).thenReturn(1);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            approvalService.transfer(1L, 2L, "转办原因");
+
+            verify(taskMapper).updateById(argThat((BizApprovalTask t) -> t.getTaskResult() == com.oa.admin.approval.enums.ApprovalTaskResult.TRANSFERRED.getCode()));
+            verify(taskMapper).insert(argThat((BizApprovalTask t) -> t.getAssigneeUserId().equals(2L)));
+            verify(flowableTaskService).setAssignee(eq("flowable-1"), eq("2"));
+        }
+    }
+
+    @Test
+    void transfer_notAssignee_throwsForbidden() {
+        BizApprovalTask task = buildTask(1L, 2L, null);
+        when(taskMapper.selectById(1L)).thenReturn(task);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> approvalService.transfer(1L, 3L, "reason"));
+            assertEquals(ErrorCode.FORBIDDEN.getCode(), ex.getCode());
+        }
+    }
+
+    @Test
+    void transfer_alreadyProcessed_throwsAlreadyApproved() {
+        BizApprovalTask task = buildTask(1L, 1L, 1);
+        when(taskMapper.selectById(1L)).thenReturn(task);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> approvalService.transfer(1L, 2L, "reason"));
+            assertEquals(ErrorCode.ALREADY_APPROVED.getCode(), ex.getCode());
         }
     }
 }

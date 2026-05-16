@@ -3,6 +3,7 @@ package com.oa.admin.approval.controller;
 import com.oa.admin.approval.dto.CcVO;
 import com.oa.admin.approval.dto.DashboardStatsVO;
 import com.oa.admin.approval.dto.InstanceDiagramVO;
+import com.oa.admin.approval.dto.TaskVO;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.entity.BizProcessNodeConfig;
@@ -58,6 +59,33 @@ public class ApprovalController {
     @GetMapping("/my-done")
     public R<List<BizApprovalTask>> myDone() {
         return R.ok(approvalService.myDone());
+    }
+
+    @SaCheckPermission("approval:todo")
+    @GetMapping("/my-todo/paged")
+    public R<PageResult<TaskVO>> myTodoPaged(
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        return R.ok(approvalService.myTodoPaged(title, page, pageSize));
+    }
+
+    @SaCheckPermission("approval:done")
+    @GetMapping("/my-done/paged")
+    public R<PageResult<TaskVO>> myDonePaged(
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        return R.ok(approvalService.myDonePaged(title, page, pageSize));
+    }
+
+    @SaCheckPermission("approval:approve")
+    @PostMapping("/task/{taskId}/transfer")
+    public R<Void> transfer(@PathVariable Long taskId, @RequestBody Map<String, Object> body) {
+        Long targetUserId = parseLong(body.get("targetUserId"), "targetUserId");
+        String reason = (String) body.get("reason");
+        approvalService.transfer(taskId, targetUserId, reason);
+        return R.ok();
     }
 
     @SaCheckPermission("approval:withdraw")

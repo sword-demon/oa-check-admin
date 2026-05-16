@@ -111,3 +111,20 @@ export interface DashboardStats {
   unreadCcCount: number
   recentActivities: ApprovalTask[]
 }
+
+export interface TaskVO {
+  id: number
+  approvalInstanceId: number
+  flowableTaskId: string
+  assigneeUserId: number
+  taskName: string
+  taskType: ApprovalTaskType
+  taskResult: ApprovalTaskResult | null
+  taskComment: string | null
+  completedAt: string | null
+  createdAt: string
+  instanceTitle: string | null
+  initiatorUserId: number | null
+  instanceStatus: number | null
+  formDataSummary: string | null
+}

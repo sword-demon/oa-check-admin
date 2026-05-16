@@ -3,6 +3,7 @@ package com.oa.admin.approval.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.oa.admin.approval.dto.DashboardStatsVO;
 import com.oa.admin.approval.dto.InstanceDiagramVO;
+import com.oa.admin.approval.dto.TaskVO;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.common.result.PageResult;
@@ -30,4 +31,10 @@ public interface ApprovalService extends IService<BizApprovalInstance> {
     InstanceDiagramVO getInstanceDiagram(Long instanceId);
 
     DashboardStatsVO dashboardStats();
+
+    PageResult<TaskVO> myTodoPaged(String title, long page, long pageSize);
+
+    PageResult<TaskVO> myDonePaged(String title, long page, long pageSize);
+
+    void transfer(Long taskId, Long targetUserId, String reason);
 }

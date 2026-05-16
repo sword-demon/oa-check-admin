@@ -86,6 +86,12 @@ const router = createRouter({
           component: () => import('@/views/approval/instance/detail.vue'),
           meta: { title: '审批详情' },
         },
+        {
+          path: 'admin/audit-log',
+          name: 'AdminAuditLog',
+          component: () => import('@/views/admin/audit-log/index.vue'),
+          meta: { title: '审计日志' },
+        },
       ],
     },
   ],
