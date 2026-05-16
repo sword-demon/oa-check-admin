@@ -20,6 +20,7 @@
           :flow="flow"
           :modeler="modeler"
           :read-only="readOnly"
+          :form-fields="formFields"
         />
       </div>
     </template>
@@ -31,8 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ConditionEditor from './ConditionEditor.vue'
+import { getTemplate } from '@/api/template'
+
+export interface FormField {
+  name: string
+  label: string
+  type?: string
+}
 
 const props = defineProps<{
   element: any
@@ -40,6 +48,8 @@ const props = defineProps<{
   templateId: number
   readOnly: boolean
 }>()
+
+const formFields = ref<FormField[]>([])
 
 const outgoingFlows = computed(() => {
   const bo = props.element?.businessObject
@@ -52,6 +62,29 @@ function updateName(name: string) {
   const modeling = props.modeler.get('modeling')
   modeling.updateProperties(props.element, { name })
 }
+
+async function loadFormFields() {
+  if (!props.templateId) return
+  try {
+    const data: any = await getTemplate(props.templateId)
+    const config = data?.formConfig
+    if (!config) return
+
+    const parsed = typeof config === 'string' ? JSON.parse(config) : config
+    const fields = parsed?.fields
+    if (!Array.isArray(fields)) return
+
+    formFields.value = fields.map((f: any) => ({
+      name: f.name || f.key || '',
+      label: f.label || f.name || f.key || '',
+      type: f.type,
+    }))
+  } catch {
+    // Form fields are supplementary - ignore parse errors
+  }
+}
+
+watch(() => props.templateId, loadFormFields, { immediate: true })
 </script>
 
 <style scoped lang="scss">

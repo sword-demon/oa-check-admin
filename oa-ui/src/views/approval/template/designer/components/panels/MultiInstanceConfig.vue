@@ -41,7 +41,7 @@
       <el-form-item v-if="miType === 'countersign'" label="完成比例">
         <el-input-number
           :model-value="completionRatio"
-          :min="0"
+          :min="1"
           :max="100"
           :step="10"
           :disabled="readOnly"

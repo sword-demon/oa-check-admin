@@ -7,12 +7,30 @@
     </div>
 
     <el-form-item label="条件表达式" label-width="90px" size="small">
-      <el-input
-        :model-value="conditionExpression"
-        placeholder="${approved == true}"
-        :disabled="readOnly"
-        @update:model-value="updateCondition($event)"
-      />
+      <div class="condition-editor__input-row">
+        <el-input
+          :model-value="conditionExpression"
+          placeholder="${approved == true}"
+          :disabled="readOnly"
+          @update:model-value="updateCondition($event)"
+        />
+        <el-dropdown v-if="formFields.length > 0" trigger="click" @command="insertField">
+          <el-button size="small" :disabled="readOnly">
+            <el-icon><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item
+                v-for="field in formFields"
+                :key="field.name"
+                :command="field.name"
+              >
+                {{ field.label || field.name }}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
       <div class="condition-editor__hint">
         支持 UEL 表达式, 如: ${leave_days > 3}, ${approved == true}
       </div>
@@ -22,11 +40,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { ArrowDown } from '@element-plus/icons-vue'
+import type { FormField } from './GatewayProperties.vue'
 
 const props = defineProps<{
   flow: any
   modeler: any
   readOnly: boolean
+  formFields: FormField[]
 }>()
 
 const conditionExpression = ref('')
@@ -84,6 +105,14 @@ function updateCondition(expression: string) {
     conditionExpression: formalExpression,
   })
 }
+
+function insertField(fieldName: string) {
+  const current = conditionExpression.value || ''
+  const expr = current
+    ? `${current} \${${fieldName}}`
+    : `\${${fieldName}}`
+  updateCondition(expr)
+}
 </script>
 
 <style scoped lang="scss">
@@ -102,6 +131,12 @@ function updateCondition(expression: string) {
     font-size: 11px;
     color: #909399;
     margin-top: 4px;
+  }
+
+  &__input-row {
+    display: flex;
+    gap: 4px;
+    width: 100%;
   }
 }
 </style>
