@@ -6,6 +6,7 @@ import com.oa.admin.common.result.ErrorCode;
 import cn.dev33.satoken.stp.StpUtil;
 import com.oa.admin.approval.entity.BizApprovalCc;
 import com.oa.admin.approval.mapper.BizApprovalCcMapper;
+import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,11 +29,14 @@ class ApprovalCcServiceTest {
     @Mock
     private BizApprovalCcMapper ccMapper;
 
+    @Mock
+    private BizApprovalInstanceMapper instanceMapper;
+
     private ApprovalCcService ccService;
 
     @BeforeEach
     void setUp() throws Exception {
-        ccService = new ApprovalCcServiceImpl();
+        ccService = new ApprovalCcServiceImpl(instanceMapper);
         injectBaseMapper(ccService, ccMapper);
     }
 

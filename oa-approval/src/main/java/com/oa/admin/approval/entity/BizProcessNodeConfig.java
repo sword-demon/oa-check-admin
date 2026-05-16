@@ -27,5 +27,7 @@ public class BizProcessNodeConfig extends BaseEntity {
     /** none, countersign, orSign */
     private String multiInstanceType;
     private BigDecimal completionRatio;
+    /** JSON array of userIds to CC when this node completes */
+    private String ccConfig;
     private Integer sortOrder;
 }

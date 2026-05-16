@@ -1,8 +1,9 @@
 package com.oa.admin.approval.controller;
 
+import com.oa.admin.approval.dto.CcVO;
 import com.oa.admin.approval.dto.DashboardStatsVO;
 import com.oa.admin.approval.dto.InstanceDiagramVO;
-import com.oa.admin.approval.entity.BizApprovalCc;
+import com.oa.admin.approval.dto.TaskVO;
 import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.entity.BizProcessNodeConfig;
@@ -13,6 +14,7 @@ import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.common.exception.BusinessException;
 import com.oa.admin.common.result.ErrorCode;
 import com.oa.admin.common.result.PageResult;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.oa.admin.common.result.R;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +61,33 @@ public class ApprovalController {
         return R.ok(approvalService.myDone());
     }
 
+    @SaCheckPermission("approval:todo")
+    @GetMapping("/my-todo/paged")
+    public R<PageResult<TaskVO>> myTodoPaged(
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        return R.ok(approvalService.myTodoPaged(title, page, pageSize));
+    }
+
+    @SaCheckPermission("approval:done")
+    @GetMapping("/my-done/paged")
+    public R<PageResult<TaskVO>> myDonePaged(
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        return R.ok(approvalService.myDonePaged(title, page, pageSize));
+    }
+
+    @SaCheckPermission("approval:approve")
+    @PostMapping("/task/{taskId}/transfer")
+    public R<Void> transfer(@PathVariable Long taskId, @RequestBody Map<String, Object> body) {
+        Long targetUserId = parseLong(body.get("targetUserId"), "targetUserId");
+        String reason = (String) body.get("reason");
+        approvalService.transfer(taskId, targetUserId, reason);
+        return R.ok();
+    }
+
     @SaCheckPermission("approval:withdraw")
     @PostMapping("/{instanceId}/withdraw")
     public R<Void> withdraw(@PathVariable Long instanceId) {
@@ -103,8 +132,13 @@ public class ApprovalController {
     // Template CRUD
     @SaCheckPermission("approval:template:list")
     @GetMapping("/template")
-    public R<List<BizProcessTemplate>> listTemplates() {
-        return R.ok(templateService.list());
+    public R<PageResult<BizProcessTemplate>> listTemplates(
+            @RequestParam(required = false) String templateName,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long pageSize) {
+        IPage<BizProcessTemplate> result = templateService.page(templateName, status, page, pageSize);
+        return R.ok(new PageResult<>(result.getRecords(), result.getTotal(), page, pageSize));
     }
 
     @SaCheckPermission("approval:template:list")
@@ -179,8 +213,8 @@ public class ApprovalController {
 
     @SaCheckPermission("approval:cc")
     @GetMapping("/cc")
-    public R<List<BizApprovalCc>> myCc() {
-        return R.ok(ccService.myCc());
+    public R<List<CcVO>> myCc() {
+        return R.ok(ccService.myCcWithDetails());
     }
 
     @SaCheckPermission("approval:cc")

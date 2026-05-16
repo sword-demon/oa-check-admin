@@ -7,6 +7,7 @@ export type {
   ProcessNodeConfig,
   InstanceDiagram,
   DashboardStats,
+  TaskVO,
 } from './approval'
 export {
   ApprovalInstanceStatus,

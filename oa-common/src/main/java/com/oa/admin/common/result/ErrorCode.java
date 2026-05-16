@@ -31,7 +31,10 @@ public enum ErrorCode {
     DEPT_NOT_FOUND_OR_NO_LEADER(3011, "部门不存在或未设置负责人"),
     DEPT_TOP_REACHED(3012, "已到达顶级部门, 无法继续向上"),
     TARGET_DEPT_NOT_FOUND_OR_NO_LEADER(3013, "目标部门不存在或未设置负责人"),
-    TEMPLATE_NOT_PUBLISHED(3014, "模板未发布, 无法发起审批");
+    TEMPLATE_NOT_PUBLISHED(3014, "模板未发布, 无法发起审批"),
+    CANNOT_TERMINATE(3015, "当前状态不允许终止"),
+    TASK_ALREADY_PROCESSED(3016, "任务已被处理"),
+    INVALID_TRANSFER_TARGET(3017, "转办目标用户无效");
 
     private final int code;
     private final String msg;
