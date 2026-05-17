@@ -34,31 +34,31 @@
 
 ### 2.1 后端
 
-| 层面 | 技术 | 版本 | 用途 |
-|------|------|------|------|
-| 运行时 | Java | 17 | 编译目标 |
-| 框架 | Spring Boot | 3.5.x | 应用框架 |
-| ORM | MyBatis-Plus | 3.5.9 | 数据访问 + 分页 |
-| 认证 | Sa-Token | 1.44.0 | 会话管理 + 权限校验 |
-| 审批引擎 | Flowable | 7.2.0 OSS | BPMN 流程执行 |
-| 数据库迁移 | Flyway | - | 版本化 DDL/DML |
-| 工具库 | Hutool | 5.8.34 | 通用工具 |
-| 关系数据库 | MySQL | 8.x | 主数据存储 |
-| 缓存 | Redis | 7.x | Sa-Token 会话存储 |
+| 层面       | 技术         | 版本      | 用途                |
+| ---------- | ------------ | --------- | ------------------- |
+| 运行时     | Java         | 17        | 编译目标            |
+| 框架       | Spring Boot  | 3.5.x     | 应用框架            |
+| ORM        | MyBatis-Plus | 3.5.9     | 数据访问 + 分页     |
+| 认证       | Sa-Token     | 1.44.0    | 会话管理 + 权限校验 |
+| 审批引擎   | Flowable     | 7.2.0 OSS | BPMN 流程执行       |
+| 数据库迁移 | Flyway       | -         | 版本化 DDL/DML      |
+| 工具库     | Hutool       | 5.8.34    | 通用工具            |
+| 关系数据库 | MySQL        | 8.x       | 主数据存储          |
+| 缓存       | Redis        | 7.x       | Sa-Token 会话存储   |
 
 ### 2.2 前端
 
-| 层面 | 技术 | 版本 |
-|------|------|------|
-| 框架 | Vue 3 | 3.5.x |
-| 语言 | TypeScript | 5.8 |
-| 构建 | Vite | 6.3.x |
+| 层面      | 技术         | 版本  |
+| --------- | ------------ | ----- |
+| 框架      | Vue 3        | 3.5.x |
+| 语言      | TypeScript   | 5.8   |
+| 构建      | Vite         | 6.3.x |
 | UI 组件库 | Element Plus | 2.9.x |
-| 状态管理 | Pinia | 3.x |
-| 路由 | Vue Router | 4.5.x |
-| HTTP | Axios | 1.9.x |
-| BPMN | bpmn-js | 18.x |
-| 测试 | Vitest | 4.x |
+| 状态管理  | Pinia        | 3.x   |
+| 路由      | Vue Router   | 4.5.x |
+| HTTP      | Axios        | 1.9.x |
+| BPMN      | bpmn-js      | 18.x  |
+| 测试      | Vitest       | 4.x   |
 
 ## 3. Maven 模块架构
 
@@ -85,6 +85,7 @@ oa-common ← oa-system ← oa-approval ← oa-app
 ```
 
 依赖规则：
+
 - `oa-common` 无内部依赖，被所有模块引用
 - `oa-system` 仅依赖 `oa-common`
 - `oa-approval` 依赖 `oa-common` + `oa-system`（需要用户/角色信息解析审批人）
@@ -111,6 +112,7 @@ com.oa.admin.common
 ```
 
 **关键设计：**
+
 - `BaseEntity`: 统一 id / createTime / updateTime / deleted 字段，MyBatis-Plus 自动填充
 - `R<T>`: 统一 API 响应包装器，`code` + `msg` + `data` + `timestamp`
 - `ErrorCode`: 枚举化错误码，业务异常通过 `BusinessException(ErrorCode)` 抛出
@@ -193,14 +195,14 @@ com.oa.admin.approval
 
 **审批人解析策略：**
 
-| 策略 | 配置 | 解析逻辑 |
-|------|------|----------|
-| `fixed` | 用户 ID 列表 | 直接分配 |
-| `deptLeader` | 无 | 查询发起人部门负责人 |
-| `upwardDeptLeader` | 层级数 | 向上 N 级部门负责人 |
-| `role` | 角色 ID | 查询角色下的用户 |
-| `initiator` | 无 | 发起人本人 |
-| `expression` | UEL 表达式 | Flowable 表达式解析 |
+| 策略               | 配置         | 解析逻辑             |
+| ------------------ | ------------ | -------------------- |
+| `fixed`            | 用户 ID 列表 | 直接分配             |
+| `deptLeader`       | 无           | 查询发起人部门负责人 |
+| `upwardDeptLeader` | 层级数       | 向上 N 级部门负责人  |
+| `role`             | 角色 ID      | 查询角色下的用户     |
+| `initiator`        | 无           | 发起人本人           |
+| `expression`       | UEL 表达式   | Flowable 表达式解析  |
 
 ### 4.4 oa-leave — 请假业务模块
 
@@ -219,6 +221,7 @@ com.oa.admin.leave
 ```
 
 **与审批模块的集成：**
+
 1. 发起请假时，调用 `ApprovalService` 提交审批
 2. `LeaveApprovalCallbackListener` 监听审批结果事件
 3. 审批通过/驳回后，自动更新请假单状态
@@ -237,6 +240,7 @@ com.oa.admin.generator
 ```
 
 **生成模板：**
+
 - `entity.java.ftl` → MyBatis-Plus 实体
 - `mapper.java.ftl` → Mapper 接口
 - `service.java.ftl` → Service 接口
@@ -264,43 +268,43 @@ resources/
 
 使用 Flyway 管理，共 16 个版本迁移脚本：
 
-| 版本范围 | 内容 |
-|----------|------|
-| V1 | 系统表建表 (`sys_user`, `sys_role`, `sys_permission`, `sys_dept` + 关联表) |
-| V2 | 审批业务表建表 (`biz_process_template`, `biz_approval_instance`, `biz_approval_task`, `biz_approval_cc`, `biz_audit_log`) |
-| V3 | 种子数据 (管理员账号、基础角色权限) |
-| V4 | Phase 2: 节点配置表 + 模板版本字段 |
-| V5 ~ V6 | 实例增强 + Bug 修复 |
-| V7 | 通知表 (`biz_notification`) |
-| V8 ~ V9 | 请假模块表 + 审批集成 |
-| V10 ~ V12 | 请假模板种子数据 + BPMN 图 |
-| V13 ~ V16 | 实体基类字段 + 权限修复 + 唯一约束 |
+| 版本范围  | 内容                                                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| V1        | 系统表建表 (`sys_user`, `sys_role`, `sys_permission`, `sys_dept` + 关联表)                                                |
+| V2        | 审批业务表建表 (`biz_process_template`, `biz_approval_instance`, `biz_approval_task`, `biz_approval_cc`, `biz_audit_log`) |
+| V3        | 种子数据 (管理员账号、基础角色权限)                                                                                       |
+| V4        | Phase 2: 节点配置表 + 模板版本字段                                                                                        |
+| V5 ~ V6   | 实例增强 + Bug 修复                                                                                                       |
+| V7        | 通知表 (`biz_notification`)                                                                                               |
+| V8 ~ V9   | 请假模块表 + 审批集成                                                                                                     |
+| V10 ~ V12 | 请假模板种子数据 + BPMN 图                                                                                                |
+| V13 ~ V16 | 实体基类字段 + 权限修复 + 唯一约束                                                                                        |
 
 ### 5.2 核心数据表
 
 **RBAC 五表：**
 
-| 表名 | 说明 |
-|------|------|
-| `sys_user` | 用户表 (username, password, dept_id, status) |
-| `sys_role` | 角色表 (roleCode, roleName, dataScope) |
-| `sys_permission` | 权限表 (树形: id, parentId, type, permissionCode, path) |
-| `sys_dept` | 部门表 (树形: id, parentId, deptName, leaderId) |
-| `sys_user_role` | 用户-角色关联 |
-| `sys_role_permission` | 角色-权限关联 |
-| `sys_role_dept` | 角色-部门关联 (自定义数据权限) |
+| 表名                  | 说明                                                    |
+| --------------------- | ------------------------------------------------------- |
+| `sys_user`            | 用户表 (username, password, dept_id, status)            |
+| `sys_role`            | 角色表 (roleCode, roleName, dataScope)                  |
+| `sys_permission`      | 权限表 (树形: id, parentId, type, permissionCode, path) |
+| `sys_dept`            | 部门表 (树形: id, parentId, deptName, leaderId)         |
+| `sys_user_role`       | 用户-角色关联                                           |
+| `sys_role_permission` | 角色-权限关联                                           |
+| `sys_role_dept`       | 角色-部门关联 (自定义数据权限)                          |
 
 **审批流程表：**
 
-| 表名 | 说明 |
-|------|------|
-| `biz_process_template` | 审批模板 (name, templateKey, formConfig, bpmnXml, status, version) |
-| `biz_process_node_config` | 节点配置 (templateId, nodeId, nodeType, assigneeType, assigneeConfig) |
-| `biz_approval_instance` | 审批实例 (templateId, initiatorId, formData, status, processInstanceId) |
-| `biz_approval_task` | 审批任务 (instanceId, assigneeId, result, comment, taskType) |
-| `biz_approval_cc` | 抄送记录 (instanceId, ccUserId, read) |
-| `biz_audit_log` | 审计日志 (instanceId, operatorId, action, detail) |
-| `biz_notification` | 站内通知 (userId, type, title, content, read, relatedId) |
+| 表名                      | 说明                                                                    |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `biz_process_template`    | 审批模板 (name, templateKey, formConfig, bpmnXml, status, version)      |
+| `biz_process_node_config` | 节点配置 (templateId, nodeId, nodeType, assigneeType, assigneeConfig)   |
+| `biz_approval_instance`   | 审批实例 (templateId, initiatorId, formData, status, processInstanceId) |
+| `biz_approval_task`       | 审批任务 (instanceId, assigneeId, result, comment, taskType)            |
+| `biz_approval_cc`         | 抄送记录 (instanceId, ccUserId, read)                                   |
+| `biz_audit_log`           | 审计日志 (instanceId, operatorId, action, detail)                       |
+| `biz_notification`        | 站内通知 (userId, type, title, content, read, relatedId)                |
 
 ## 6. 前端架构
 
@@ -349,14 +353,17 @@ oa-ui/src/
 ### 6.2 关键设计
 
 **请求层：**
+
 - Axios 实例统一封装，自动注入 `satoken` Header
 - 401 自动重定向到登录页
 - 统一错误提示（ElMessage）
 
 **认证流程：**
+
 - 登录 → token 存入 `localStorage` → 路由守卫检查 token → 请求拦截器注入 Header
 
 **流程设计器组件树：**
+
 ```
 ApprovalFlowDesigner.vue (兼容入口)
   └── LowflowApprovalDesigner.vue
@@ -368,6 +375,7 @@ ApprovalFlowDesigner.vue (兼容入口)
 ```
 
 **BPMN 双模式：**
+
 - 设计态: `BpmnModeler` → 可拖拽编辑
 - 查看态: `BpmnViewer` → 只读渲染
 
@@ -375,24 +383,24 @@ ApprovalFlowDesigner.vue (兼容入口)
 
 ### 7.1 后端规范
 
-| 规范 | 约定 |
-|------|------|
-| Service 层 | 必须先定义接口 (`XxxService`)，再由实现类 (`XxxServiceImpl`) 实现 |
-| 依赖注入 | 声明类型为接口，非实现类 |
-| ORM | 继承 `ServiceImpl<Mapper, Entity>`，使用 `LambdaQueryWrapper` |
-| 字面量 | 禁止硬编码，使用常量类 (`ApprovalConstants`) 或枚举 (`ApprovalInstanceStatus`) |
-| 异常 | 使用 `BusinessException(ErrorCode)` 抛出，禁止 `new RuntimeException("...")` |
-| Controller | `@SaCheckPermission` 注解控制接口权限 |
-| 数据库 | Flyway 版本化迁移，禁止手动修改表结构 |
+| 规范       | 约定                                                                           |
+| ---------- | ------------------------------------------------------------------------------ |
+| Service 层 | 必须先定义接口 (`XxxService`)，再由实现类 (`XxxServiceImpl`) 实现              |
+| 依赖注入   | 声明类型为接口，非实现类                                                       |
+| ORM        | 继承 `ServiceImpl<Mapper, Entity>`，使用 `LambdaQueryWrapper`                  |
+| 字面量     | 禁止硬编码，使用常量类 (`ApprovalConstants`) 或枚举 (`ApprovalInstanceStatus`) |
+| 异常       | 使用 `BusinessException(ErrorCode)` 抛出，禁止 `new RuntimeException("...")`   |
+| Controller | `@SaCheckPermission` 注解控制接口权限                                          |
+| 数据库     | Flyway 版本化迁移，禁止手动修改表结构                                          |
 
 ### 7.2 前端规范
 
-| 规范 | 约定 |
-|------|------|
-| 组件 | Vue 3 `<script setup>` + TypeScript |
-| 状态 | Pinia stores，按领域拆分 |
-| 请求 | 统一通过 `api/` 层调用，不直接使用 Axios |
-| 类型 | 所有 API 数据结构定义 `types/` 目录 |
+| 规范 | 约定                                                       |
+| ---- | ---------------------------------------------------------- |
+| 组件 | Vue 3 `<script setup>` + TypeScript                        |
+| 状态 | Pinia stores，按领域拆分                                   |
+| 请求 | 统一通过 `api/` 层调用，不直接使用 Axios                   |
+| 类型 | 所有 API 数据结构定义 `types/` 目录                        |
 | 命名 | 页面 `PascalCase`，组件 `PascalCase`，工具函数 `camelCase` |
 
 ## 8. 部署架构
@@ -411,32 +419,32 @@ services:
 
 ### 8.2 环境配置
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `SPRING_DATASOURCE_URL` | `jdbc:mysql://localhost:3306/oa_admin` | 数据库连接 |
-| `SPRING_DATASOURCE_USERNAME` | `root` | 数据库用户 |
-| `SPRING_DATASOURCE_PASSWORD` | `root123` | 数据库密码 |
-| `SPRING_DATA_REDIS_HOST` | `localhost` | Redis 地址 |
-| `SPRING_DATA_REDIS_PORT` | `6379` | Redis 端口 |
+| 变量                         | 默认值                                 | 说明       |
+| ---------------------------- | -------------------------------------- | ---------- |
+| `SPRING_DATASOURCE_URL`      | `jdbc:mysql://localhost:3306/oa_admin` | 数据库连接 |
+| `SPRING_DATASOURCE_USERNAME` | `root`                                 | 数据库用户 |
+| `SPRING_DATASOURCE_PASSWORD` | `root123`                              | 数据库密码 |
+| `SPRING_DATA_REDIS_HOST`     | `localhost`                            | Redis 地址 |
+| `SPRING_DATA_REDIS_PORT`     | `6379`                                 | Redis 端口 |
 
 ## 9. 测试策略
 
-| 层级 | 工具 | 范围 |
-|------|------|------|
-| 后端单元测试 | JUnit 5 + Mockito | Service 层业务逻辑 |
+| 层级         | 工具                    | 范围                   |
+| ------------ | ----------------------- | ---------------------- |
+| 后端单元测试 | JUnit 5 + Mockito       | Service 层业务逻辑     |
 | 前端单元测试 | Vitest + Vue Test Utils | API 层、工具函数、组件 |
-| BPMN 测试 | Flowable Test | 流程定义验证 |
-| 集成测试 | Spring Boot Test | 完整审批流程端到端 |
+| BPMN 测试    | Flowable Test           | 流程定义验证           |
+| 集成测试     | Spring Boot Test        | 完整审批流程端到端     |
 
 当前测试覆盖：前端 67 个测试用例（bpmn-utils, constants, template API, composables）。
 
 ## 10. 已知限制与技术债务
 
-| 限制 | 当前状态 | 规划 |
-|------|----------|------|
-| 附件存储 | 仅保存文件 URL 列表，无独立文件服务 | 后续接入 OSS |
-| 条件组合 | 仅支持简单字段条件，不支持嵌套 OR | 后续扩展条件模型 |
-| 消息通知 | 仅站内通知，未接入邮件/IM | 后续集成消息通道 |
-| 代码生成器 | 仅生成后端代码 | 后续支持前端页面生成 |
-| 历史模板反向解析 | 仅新向导生成的 XML 可恢复为 Lowflow 模型 | 保留高级设计器兼容 |
-| 并行分支 | 保留基础并行网关，复杂 UI 待扩展 | 后续完善 |
+| 限制             | 当前状态                                 | 规划                 |
+| ---------------- | ---------------------------------------- | -------------------- |
+| 附件存储         | 仅保存文件 URL 列表，无独立文件服务      | 后续接入 OSS         |
+| 条件组合         | 仅支持简单字段条件，不支持嵌套 OR        | 后续扩展条件模型     |
+| 消息通知         | 仅站内通知，未接入邮件/IM                | 后续集成消息通道     |
+| 代码生成器       | 仅生成后端代码                           | 后续支持前端页面生成 |
+| 历史模板反向解析 | 仅新向导生成的 XML 可恢复为 Lowflow 模型 | 保留高级设计器兼容   |
+| 并行分支         | 保留基础并行网关，复杂 UI 待扩展         | 后续完善             |
