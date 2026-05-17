@@ -25,6 +25,7 @@
           placeholder="选择开始时间"
           format="YYYY-MM-DD HH:mm:ss"
           value-format="YYYY-MM-DDTHH:mm:ss"
+          :disabled-date="disabledDate"
         />
       </el-form-item>
       <el-form-item label="结束时间" prop="endTime">
@@ -34,6 +35,7 @@
           placeholder="选择结束时间"
           format="YYYY-MM-DD HH:mm:ss"
           value-format="YYYY-MM-DDTHH:mm:ss"
+          :disabled-date="disabledDate"
         />
       </el-form-item>
       <el-form-item label="请假原因">
@@ -71,6 +73,12 @@ const emit = defineEmits<{
 }>()
 
 const isResubmit = computed(() => props.leaveData?.status === 3)
+
+const disabledDate = (time: Date) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return time.getTime() < today.getTime()
+}
 
 const formRef = ref<FormInstance>()
 const form = reactive({

@@ -48,13 +48,13 @@ const router = createRouter({
           path: 'approval/template',
           name: 'ApprovalTemplate',
           component: () => import('@/views/approval/template/index.vue'),
-          meta: { title: '审批模板' },
+          meta: { title: '审批模板', permission: 'approval:template:list' },
         },
         {
           path: 'approval/template/designer/:id',
           name: 'FlowDesigner',
           component: () => import('@/views/approval/template/designer/index.vue'),
-          meta: { title: '流程设计器' },
+          meta: { title: '流程设计器', permission: 'approval:template:edit' },
         },
         {
           path: 'approval/my-apply',

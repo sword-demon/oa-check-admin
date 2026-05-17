@@ -41,13 +41,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ArrowDown } from '@element-plus/icons-vue'
-import type { FormField } from './GatewayProperties.vue'
+import type { ApprovalFormField } from '@/utils/approval-form'
 
 const props = defineProps<{
   flow: any
   modeler: any
   readOnly: boolean
-  formFields: FormField[]
+  formFields: ApprovalFormField[]
 }>()
 
 const conditionExpression = ref('')

@@ -1,13 +1,24 @@
 <template>
-  <div>
-    <el-card>
-      <div class="toolbar">
-        <div class="toolbar__search">
-          <el-input v-model="searchTitle" placeholder="搜索标题" clearable style="width: 200px" @clear="loadData" @keyup.enter="loadData" />
-          <el-button type="primary" style="margin-left: 10px" @click="loadData">搜索</el-button>
+  <div class="page-shell">
+    <section class="page-header">
+      <div class="page-header__titles">
+        <p class="page-subtitle page-subtitle--eyebrow">Archive</p>
+        <h1 class="page-title">我的已办</h1>
+        <p class="page-subtitle">复盘已处理任务的结果、意见和完成时间，支持快速追溯审批详情。</p>
+      </div>
+    </section>
+
+    <el-card class="page-panel">
+      <div class="page-toolbar">
+        <div class="page-toolbar__filters">
+          <el-input v-model="searchTitle" class="field--lg" placeholder="搜索标题" clearable @clear="loadData" @keyup.enter="loadData" />
+          <el-button type="primary" @click="loadData">搜索</el-button>
+        </div>
+        <div class="page-toolbar__actions">
+          <span class="page-toolbar__meta">累计 {{ total }} 条已办</span>
         </div>
       </div>
-      <el-table :data="tasks" stripe v-loading="loading">
+      <el-table :data="tasks" stripe v-loading="loading" class="page-table">
         <el-table-column prop="instanceTitle" label="申请标题" />
         <el-table-column prop="taskName" label="审批节点" width="120" />
         <el-table-column prop="taskResult" label="结果" width="100">
@@ -23,7 +34,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination">
+      <div class="page-pagination">
         <el-pagination
           v-model:current-page="page"
           v-model:page-size="pageSize"
@@ -91,9 +102,3 @@ function viewDetail(instanceId: number) {
 
 onMounted(loadData)
 </script>
-
-<style scoped>
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.toolbar__search { display: flex; align-items: center; }
-.pagination { display: flex; justify-content: flex-end; margin-top: 15px; }
-</style>

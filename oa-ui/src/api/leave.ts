@@ -16,12 +16,21 @@ export interface LeaveRequestForm {
   reason?: string
 }
 
+export interface LeaveRequestDetail extends LeaveRequestForm {
+  id: number
+  applicantUserId: number
+  status: number
+  approvalInstanceId: number | null
+  createdAt: string
+  updatedAt: string
+}
+
 export function getLeaveList(params?: LeaveRequestQuery) {
   return request.get('/leave/leave_request', { params })
 }
 
 export function getLeaveDetail(id: number) {
-  return request.get(`/leave/leave_request/${id}`)
+  return request.get(`/leave/leave_request/${id}`) as Promise<LeaveRequestDetail>
 }
 
 export function createLeave(data: LeaveRequestForm) {

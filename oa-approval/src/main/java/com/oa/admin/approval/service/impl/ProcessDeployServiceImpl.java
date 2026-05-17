@@ -54,6 +54,7 @@ public class ProcessDeployServiceImpl implements ProcessDeployService {
         log.info("Deployed template {}: deploymentId={}, processDefinitionId={}",
             template.getTemplateKey(), deployment.getId(), processDefinition.getId());
 
+        template.setFlowableDeploymentId(deployment.getId());
         return processDefinition.getId();
     }
 

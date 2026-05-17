@@ -1,31 +1,34 @@
 <template>
-  <div v-loading="loading" class="instance-detail">
-    <div class="instance-detail__header">
-      <el-page-header @back="router.back()">
-        <template #content>
-          <span>{{ instance?.instanceTitle || '审批详情' }}</span>
-          <el-tag v-if="instance" :type="statusType(instance.status)" style="margin-left: 8px">
-            {{ statusLabel(instance.status) }}
-          </el-tag>
-        </template>
-      </el-page-header>
-    </div>
+  <div v-loading="loading" class="page-shell instance-detail">
+    <section class="page-header instance-detail__header">
+      <div class="page-header__titles">
+        <el-page-header @back="router.back()">
+          <template #content>
+            <span>{{ instance?.instanceTitle || '审批详情' }}</span>
+            <el-tag v-if="instance" :type="statusType(instance.status)" class="instance-detail__tag">
+              {{ statusLabel(instance.status) }}
+            </el-tag>
+          </template>
+        </el-page-header>
+        <p class="page-subtitle">查看流程节点高亮、审批进度和表单提交内容。</p>
+      </div>
+    </section>
 
-    <el-row :gutter="20" class="instance-detail__body" v-if="instance">
-      <el-col :span="12">
-        <el-card header="流程图">
+    <el-row v-if="instance" :gutter="20" class="instance-detail__body">
+      <el-col :xs="24" :lg="12">
+        <el-card header="流程图" class="page-panel">
           <ProcessDiagram :diagram="diagram" />
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card header="审批进度">
+      <el-col :xs="24" :lg="12">
+        <el-card header="审批进度" class="page-panel">
           <ApprovalTimeline :tasks="tasks" />
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card v-if="instance?.formData" header="表单数据" class="instance-detail__form">
-      <pre class="instance-detail__form-data">{{ formatFormData(instance.formData) }}</pre>
+    <el-card v-if="instance?.formData" header="表单详情" class="page-panel">
+      <ApprovalFormDetail :template-id="instance.processTemplateId" :form-data="instance.formData" />
     </el-card>
   </div>
 </template>
@@ -38,6 +41,7 @@ import type { ApprovalInstance, ApprovalTask, InstanceDiagram } from '@/types'
 import { ApprovalInstanceStatus } from '@/types'
 import ApprovalTimeline from './components/ApprovalTimeline.vue'
 import ProcessDiagram from './components/ProcessDiagram.vue'
+import ApprovalFormDetail from './components/ApprovalFormDetail.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -69,14 +73,6 @@ function statusLabel(status: ApprovalInstanceStatus) {
   return map[status] || '未知'
 }
 
-function formatFormData(json: string) {
-  try {
-    return JSON.stringify(JSON.parse(json), null, 2)
-  } catch {
-    return json
-  }
-}
-
 onMounted(async () => {
   const id = Number(route.params.id)
   loading.value = true
@@ -100,24 +96,15 @@ onMounted(async () => {
 <style scoped lang="scss">
 .instance-detail {
   &__header {
-    margin-bottom: 20px;
+    gap: 8px;
   }
 
   &__body {
-    margin-bottom: 20px;
+    margin-bottom: 0;
   }
 
-  &__form {
-    &-data {
-      background: #f5f7fa;
-      padding: 12px 16px;
-      border-radius: 4px;
-      font-size: 13px;
-      line-height: 1.6;
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
+  &__tag {
+    margin-left: 8px;
   }
 }
 </style>

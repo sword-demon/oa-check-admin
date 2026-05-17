@@ -35,12 +35,7 @@
 import { computed, ref, watch } from 'vue'
 import ConditionEditor from './ConditionEditor.vue'
 import { getTemplate } from '@/api/template'
-
-export interface FormField {
-  name: string
-  label: string
-  type?: string
-}
+import { parseApprovalFormConfig, type ApprovalFormField } from '@/utils/approval-form'
 
 const props = defineProps<{
   element: any
@@ -49,7 +44,7 @@ const props = defineProps<{
   readOnly: boolean
 }>()
 
-const formFields = ref<FormField[]>([])
+const formFields = ref<ApprovalFormField[]>([])
 
 const outgoingFlows = computed(() => {
   const bo = props.element?.businessObject
@@ -67,20 +62,10 @@ async function loadFormFields() {
   if (!props.templateId) return
   try {
     const data: any = await getTemplate(props.templateId)
-    const config = data?.formConfig
-    if (!config) return
-
-    const parsed = typeof config === 'string' ? JSON.parse(config) : config
-    const fields = parsed?.fields
-    if (!Array.isArray(fields)) return
-
-    formFields.value = fields.map((f: any) => ({
-      name: f.name || f.key || '',
-      label: f.label || f.name || f.key || '',
-      type: f.type,
-    }))
+    formFields.value = parseApprovalFormConfig(data?.formConfig)
   } catch {
     // Form fields are supplementary - ignore parse errors
+    formFields.value = []
   }
 }
 

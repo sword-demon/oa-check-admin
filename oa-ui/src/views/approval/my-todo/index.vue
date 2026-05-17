@@ -1,16 +1,26 @@
 <template>
-  <div>
-    <el-card>
-      <div class="toolbar">
-        <div class="toolbar__search">
-          <el-input v-model="searchTitle" placeholder="搜索标题" clearable style="width: 200px" @clear="loadData" @keyup.enter="loadData" />
-          <el-button type="primary" style="margin-left: 10px" @click="loadData">搜索</el-button>
+  <div class="page-shell">
+    <section class="page-header">
+      <div class="page-header__titles">
+        <p class="page-subtitle page-subtitle--eyebrow">Pending Queue</p>
+        <h1 class="page-title">我的待办</h1>
+        <p class="page-subtitle">集中处理等待审批的任务节点，支持通过、驳回和转办。</p>
+      </div>
+    </section>
+
+    <el-card class="page-panel">
+      <div class="page-toolbar">
+        <div class="page-toolbar__filters">
+          <el-input v-model="searchTitle" class="field--lg" placeholder="搜索标题" clearable @clear="loadData" @keyup.enter="loadData" />
+          <el-button type="primary" @click="loadData">搜索</el-button>
+        </div>
+        <div class="page-toolbar__actions">
+          <span class="page-toolbar__meta">当前待办 {{ total }} 条</span>
         </div>
       </div>
-      <el-table :data="tasks" stripe v-loading="loading">
+      <el-table :data="tasks" stripe v-loading="loading" class="page-table">
         <el-table-column prop="instanceTitle" label="申请标题" />
         <el-table-column prop="taskName" label="审批节点" width="120" />
-        <el-table-column prop="formDataSummary" label="表单摘要" show-overflow-tooltip />
         <el-table-column prop="createdAt" label="接收时间" width="170" />
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
@@ -21,7 +31,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination">
+      <div class="page-pagination">
         <el-pagination
           v-model:current-page="page"
           v-model:page-size="pageSize"
@@ -48,8 +58,25 @@
 
     <el-dialog v-model="transferVisible" title="转办任务" width="450px" destroy-on-close>
       <el-form :model="transferForm" label-width="80px">
-        <el-form-item label="目标用户ID" required>
-          <el-input v-model.number="transferForm.targetUserId" placeholder="请输入目标用户ID" />
+        <el-form-item label="目标用户" required>
+          <el-select
+            v-model="transferForm.targetUserId"
+            placeholder="请选择转办目标"
+            clearable
+            filterable
+            :loading="transferUserLoading"
+            no-data-text="暂无可转办用户"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in transferUserOptions"
+              :key="user.id"
+              :label="userOptionLabel(user)"
+              :value="user.id"
+              :disabled="user.id === currentUserId"
+            />
+          </el-select>
+          <div class="transfer-hint">当前登录用户不可转办给自己。</div>
         </el-form-item>
         <el-form-item label="转办原因">
           <el-input v-model="transferForm.reason" type="textarea" :rows="3" placeholder="请输入转办原因" />
@@ -64,19 +91,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getMyTodoPaged, approveTask, transferTask } from '@/api/approval'
-import type { TaskVO } from '@/types'
+import { getUserList } from '@/api/user'
+import { useUserStore } from '@/stores/user'
+import { CommonStatus, type SysUser, type TaskVO } from '@/types'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const tasks = ref<TaskVO[]>([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const searchTitle = ref('')
+const transferUserLoading = ref(false)
+const transferUserOptions = ref<SysUser[]>([])
+const transferUsersLoaded = ref(false)
+const currentUserId = computed(() => Number(userStore.userInfo?.id || 0) || null)
+const TRANSFER_USER_PAGE_SIZE = 500
 
 // Approve/reject dialog state
 const actionDialogVisible = ref(false)
@@ -87,6 +122,15 @@ const currentTaskId = ref(0)
 // Transfer dialog state
 const transferVisible = ref(false)
 const transferForm = reactive({ taskId: 0, targetUserId: undefined as number | undefined, reason: '' })
+
+function userLabel(user: SysUser) {
+  return user.nickname ? `${user.nickname}（${user.username}）` : user.username
+}
+
+function userOptionLabel(user: SysUser) {
+  const label = userLabel(user)
+  return user.id === currentUserId.value ? `${label}（当前登录用户，不可转办）` : label
+}
 
 async function loadData() {
   loading.value = true
@@ -127,15 +171,38 @@ async function handleAction() {
   }
 }
 
-function openTransfer(taskId: number) {
+async function loadTransferUsers(force = false) {
+  if (transferUserLoading.value || (transferUsersLoaded.value && !force)) return
+
+  transferUserLoading.value = true
+  try {
+    const data = await getUserList({
+      status: CommonStatus.ACTIVE,
+      page: 1,
+      pageSize: TRANSFER_USER_PAGE_SIZE,
+    })
+    transferUserOptions.value = data.list || []
+    transferUsersLoaded.value = true
+  } catch {
+    transferUserOptions.value = []
+  } finally {
+    transferUserLoading.value = false
+  }
+}
+
+async function openTransfer(taskId: number) {
   transferForm.taskId = taskId
   transferForm.targetUserId = undefined
   transferForm.reason = ''
+  await loadTransferUsers()
   transferVisible.value = true
 }
 
 async function handleTransfer() {
-  if (!transferForm.targetUserId) return
+  if (!transferForm.targetUserId) {
+    ElMessage.warning('请选择目标用户')
+    return
+  }
   try {
     await transferTask(transferForm.taskId, {
       targetUserId: transferForm.targetUserId,
@@ -153,7 +220,10 @@ onMounted(loadData)
 </script>
 
 <style scoped>
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.toolbar__search { display: flex; align-items: center; }
-.pagination { display: flex; justify-content: flex-end; margin-top: 15px; }
+.transfer-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #909399;
+}
 </style>

@@ -21,6 +21,7 @@ import com.oa.admin.leave.mapper.LeaveRequestMapper;
 import com.oa.admin.leave.service.LeaveRequestService;
 import com.oa.admin.leave.vo.LeaveRequestVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,14 +36,19 @@ public class LeaveRequestServiceImpl extends ServiceImpl<LeaveRequestMapper, Lea
     private final ApprovalService approvalService;
     private final ApprovalTemplateService templateService;
 
+    /**
+     * 通过 ObjectProvider 延迟获取自身代理,避免循环依赖的同时保持构造器注入。
+     */
+    private final ObjectProvider<LeaveRequestService> selfProvider;
+
     @Override
     public PageResult<LeaveRequestVO> page(LeaveRequestQueryDTO query) {
         LambdaQueryWrapper<LeaveRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper
                 .like(query.getTitle() != null && !query.getTitle().isEmpty(), LeaveRequest::getTitle, query.getTitle())
-                .eq(query.getLeaveType() != null, LeaveRequest::getLeaveType, query.getLeaveType().getCode())
+                .eq(query.getLeaveType() != null, LeaveRequest::getLeaveType, query.getLeaveType())
                 .eq(query.getApplicantUserId() != null, LeaveRequest::getApplicantUserId, query.getApplicantUserId())
-                .eq(query.getStatus() != null, LeaveRequest::getStatus, query.getStatus().getCode())
+                .eq(query.getStatus() != null, LeaveRequest::getStatus, query.getStatus())
                 .orderByDesc(LeaveRequest::getCreatedAt);
         Page<LeaveRequest> result = this.page(new Page<>(query.getPage(), query.getPageSize()), wrapper);
         return new PageResult<>(result.getRecords().stream().map(this::toVO).toList(), result.getTotal(), query.getPage(), query.getPageSize());
@@ -57,7 +63,7 @@ public class LeaveRequestServiceImpl extends ServiceImpl<LeaveRequestMapper, Lea
     public LeaveRequestVO create(LeaveRequestCreateDTO request) {
         LeaveRequest entity = new LeaveRequest();
         entity.setTitle(request.getTitle());
-        entity.setLeaveType(request.getLeaveType() == null ? null : request.getLeaveType().getCode());
+        entity.setLeaveType(request.getLeaveType());
         entity.setStartTime(request.getStartTime());
         entity.setEndTime(request.getEndTime());
         entity.setReason(request.getReason());
@@ -74,7 +80,7 @@ public class LeaveRequestServiceImpl extends ServiceImpl<LeaveRequestMapper, Lea
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }
         entity.setTitle(request.getTitle());
-        entity.setLeaveType(request.getLeaveType() == null ? null : request.getLeaveType().getCode());
+        entity.setLeaveType(request.getLeaveType());
         entity.setStartTime(request.getStartTime());
         entity.setEndTime(request.getEndTime());
         entity.setReason(request.getReason());
@@ -120,13 +126,13 @@ public class LeaveRequestServiceImpl extends ServiceImpl<LeaveRequestMapper, Lea
         }
 
         entity.setTitle(dto.getTitle());
-        entity.setLeaveType(dto.getLeaveType() == null ? null : dto.getLeaveType().getCode());
+        entity.setLeaveType(dto.getLeaveType());
         entity.setStartTime(dto.getStartTime());
         entity.setEndTime(dto.getEndTime());
         entity.setReason(dto.getReason());
         updateById(entity);
 
-        return submitForApproval(id);
+        return selfProvider.getObject().submitForApproval(id);
     }
 
     @Override

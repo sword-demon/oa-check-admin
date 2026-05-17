@@ -1,5 +1,7 @@
 package com.oa.admin.leave.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -20,6 +22,12 @@ public enum LeaveType {
         this.label = label;
     }
 
+    @JsonValue
+    public int getCode() {
+        return code;
+    }
+
+    @JsonCreator
     public static LeaveType fromCode(int code) {
         for (LeaveType value : values()) {
             if (value.code == code) {

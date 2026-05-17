@@ -1,6 +1,5 @@
 package com.oa.admin.leave.dto;
 
-import com.oa.admin.leave.enums.LeaveType;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -14,8 +13,8 @@ public class LeaveRequestCreateDTO {
     /** 申请标题 */
     private String title;
 
-    /** 请假类型 */
-    private LeaveType leaveType;
+    /** 请假类型 code */
+    private Integer leaveType;
 
     /** 开始时间 */
     private LocalDateTime startTime;

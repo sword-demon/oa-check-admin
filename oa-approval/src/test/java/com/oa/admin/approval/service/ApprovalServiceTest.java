@@ -1,6 +1,7 @@
 package com.oa.admin.approval.service;
 
 import com.oa.admin.approval.service.impl.ApprovalServiceImpl;
+import com.oa.admin.approval.enums.ApprovalInstanceStatus;
 import com.oa.admin.approval.enums.TemplateStatus;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -35,6 +36,7 @@ import org.flowable.task.api.TaskQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -94,12 +96,15 @@ class ApprovalServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private ApprovalFormSchemaService formSchemaService;
+
     private ApprovalService approvalService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
-        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper, auditLogService, notificationService);
+        approvalService = new ApprovalServiceImpl(templateService, taskMapper, ccMapper, ccService, runtimeService, flowableTaskService, historyService, repositoryService, objectMapper, auditLogService, notificationService, formSchemaService);
         injectBaseMapper(approvalService, instanceMapper);
     }
 
@@ -124,6 +129,7 @@ class ApprovalServiceTest {
         t.setTemplateKey(key);
         t.setTemplateName("Test Template");
         t.setStatus(TemplateStatus.PUBLISHED.getCode());
+        t.setFlowableProcessDefinitionId(key + ":1");
         return t;
     }
 
@@ -157,9 +163,13 @@ class ApprovalServiceTest {
 
         ProcessInstance pi = mock(ProcessInstance.class);
         when(pi.getId()).thenReturn("proc-123");
-        when(runtimeService.startProcessInstanceByKey(anyString(), anyString(), anyMap()))
+        when(runtimeService.startProcessInstanceById(anyString(), anyString(), anyMap()))
                 .thenReturn(pi);
-        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenReturn(1);
+        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenAnswer(invocation -> {
+            BizApprovalInstance instance = invocation.getArgument(0);
+            instance.setId(1L);
+            return 1;
+        });
 
         try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
             stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
@@ -168,6 +178,59 @@ class ApprovalServiceTest {
             assertNotNull(result);
             assertEquals(1, result.getStatus());
             assertEquals("proc-123", result.getFlowableProcessInstanceId());
+            verify(formSchemaService).validateSubmission(eq(template.getFormConfig()), anyMap());
+            verify(runtimeService).startProcessInstanceById(eq("leave_request:1"), eq("1"), anyMap());
+        }
+    }
+
+    @Test
+    void submit_withoutProcessDefinitionId_throwsTemplateNotPublished() {
+        BizProcessTemplate template = buildTemplate(1L, "leave_request");
+        template.setFlowableProcessDefinitionId(null);
+        when(templateService.getById(1L)).thenReturn(template);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> approvalService.submit(1L, "请假", "{}"));
+            assertEquals(ErrorCode.TEMPLATE_NOT_PUBLISHED.getCode(), ex.getCode());
+            verify(runtimeService, never()).startProcessInstanceById(anyString(), anyString(), anyMap());
+        }
+    }
+
+    @Test
+    void submit_withInvalidJsonFormData_throwsParamError() {
+        BizProcessTemplate template = buildTemplate(1L, "leave_request");
+        when(templateService.getById(1L)).thenReturn(template);
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> approvalService.submit(1L, "请假", "{bad json"));
+            assertEquals(ErrorCode.PARAM_ERROR.getCode(), ex.getCode());
+            verify(instanceMapper, never()).insert(any(BizApprovalInstance.class));
+        }
+    }
+
+    @Test
+    void submit_withInvalidDynamicForm_rejectsBeforeStartingProcess() {
+        BizProcessTemplate template = buildTemplate(1L, "expense_request");
+        template.setFormConfig("{\"fields\":[{\"fieldKey\":\"amount\",\"type\":\"number\",\"label\":\"金额\",\"required\":true}]}");
+        when(templateService.getById(1L)).thenReturn(template);
+        doThrow(new BusinessException(ErrorCode.PARAM_ERROR.getCode(), "金额不能为空"))
+            .when(formSchemaService).validateSubmission(eq(template.getFormConfig()), anyMap());
+
+        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
+            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                () -> approvalService.submit(1L, "费用报销", "{}"));
+
+            assertEquals(ErrorCode.PARAM_ERROR.getCode(), ex.getCode());
+            verify(runtimeService, never()).startProcessInstanceById(anyString(), anyString(), anyMap());
+            verify(instanceMapper, never()).insert(any(BizApprovalInstance.class));
         }
     }
 
@@ -255,22 +318,27 @@ class ApprovalServiceTest {
 
         ProcessInstance pi = mock(ProcessInstance.class);
         when(pi.getId()).thenReturn("proc-456");
-        when(runtimeService.startProcessInstanceByKey(anyString(), anyString(), anyMap()))
+        when(runtimeService.startProcessInstanceById(anyString(), anyString(), anyMap()))
                 .thenReturn(pi);
-        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenReturn(1);
+        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenAnswer(invocation -> {
+            BizApprovalInstance instance = invocation.getArgument(0);
+            instance.setId(1L);
+            return 1;
+        });
 
         try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
             stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
 
             approvalService.submit(1L, "请假", "{\"leave_days\":5,\"leave_type\":\"sick\"}");
 
-            verify(runtimeService).startProcessInstanceByKey(
-                eq("leave_request_v2"),
+            verify(runtimeService).startProcessInstanceById(
+                eq("leave_request_v2:1"),
                 eq("1"),
                 argThat(vars -> {
                     Object days = vars.get("leave_days");
                     Object type = vars.get("leave_type");
                     return vars.get("initiator").equals(1L)
+                        && vars.get("approvalInstanceId").equals(1L)
                         && days != null && type != null;
                 })
             );
@@ -342,6 +410,35 @@ class ApprovalServiceTest {
                     () -> approvalService.withdraw(1L));
             assertEquals(ErrorCode.CANNOT_WITHDRAW.getCode(), ex.getCode());
         }
+    }
+
+    @Test
+    void instanceTasks_syncsMissingActiveFlowableTasks() {
+        BizApprovalInstance instance = new BizApprovalInstance();
+        instance.setId(1L);
+        instance.setStatus(ApprovalInstanceStatus.PENDING.getCode());
+        instance.setFlowableProcessInstanceId("proc-1");
+        when(instanceMapper.selectById(1L)).thenReturn(instance);
+
+        Task activeTask = mock(Task.class);
+        when(activeTask.getId()).thenReturn("flowable-active-1");
+        when(activeTask.getAssignee()).thenReturn("9");
+        when(activeTask.getName()).thenReturn("组长审批");
+
+        TaskQuery taskQuery = mock(TaskQuery.class);
+        when(flowableTaskService.createTaskQuery()).thenReturn(taskQuery);
+        when(taskQuery.processInstanceId("proc-1")).thenReturn(taskQuery);
+        when(taskQuery.list()).thenReturn(List.of(activeTask));
+        when(taskMapper.selectList(any())).thenReturn(Collections.emptyList());
+
+        approvalService.instanceTasks(1L);
+
+        ArgumentCaptor<BizApprovalTask> captor = ArgumentCaptor.forClass(BizApprovalTask.class);
+        verify(taskMapper).insert(captor.capture());
+        assertEquals(1L, captor.getValue().getApprovalInstanceId());
+        assertEquals("flowable-active-1", captor.getValue().getFlowableTaskId());
+        assertEquals(9L, captor.getValue().getAssigneeUserId());
+        assertEquals("组长审批", captor.getValue().getTaskName());
     }
 
     @Test
@@ -504,6 +601,21 @@ class ApprovalServiceTest {
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Detail Test", result.getInstanceTitle());
+    }
+
+    @Test
+    void getInstanceDetail_historicalInstance_keepsTemplateVersionAndFormData() {
+        BizApprovalInstance instance = new BizApprovalInstance();
+        instance.setId(1L);
+        instance.setInstanceTitle("历史费用审批");
+        instance.setProcessTemplateId(10L);
+        instance.setFormData("{\"amount\":1200}");
+        when(instanceMapper.selectById(1L)).thenReturn(instance);
+
+        BizApprovalInstance result = approvalService.getInstanceDetail(1L);
+
+        assertEquals(10L, result.getProcessTemplateId());
+        assertEquals("{\"amount\":1200}", result.getFormData());
     }
 
     @Test
@@ -687,9 +799,13 @@ class ApprovalServiceTest {
 
         ProcessInstance pi = mock(ProcessInstance.class);
         when(pi.getId()).thenReturn("proc-audit-1");
-        when(runtimeService.startProcessInstanceByKey(anyString(), anyString(), anyMap()))
+        when(runtimeService.startProcessInstanceById(anyString(), anyString(), anyMap()))
                 .thenReturn(pi);
-        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenReturn(1);
+        when(instanceMapper.insert(any(BizApprovalInstance.class))).thenAnswer(invocation -> {
+            BizApprovalInstance instance = invocation.getArgument(0);
+            instance.setId(1L);
+            return 1;
+        });
 
         try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
             stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);

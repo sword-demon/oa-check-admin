@@ -8,6 +8,7 @@ import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
 import com.oa.admin.common.event.ApprovalCompletedEvent;
+import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
@@ -33,6 +34,9 @@ public class ProcessEndEventListener implements FlowableEventListener {
 
     @Override
     public void onEvent(FlowableEvent event) {
+        if (event.getType() != FlowableEngineEventType.PROCESS_COMPLETED) {
+            return;
+        }
         if (event instanceof FlowableEngineEntityEvent entityEvent) {
             if (entityEvent.getEntity() instanceof ExecutionEntity execution) {
                 String processInstanceId = execution.getProcessInstanceId();
@@ -41,6 +45,12 @@ public class ProcessEndEventListener implements FlowableEventListener {
                         .eq(BizApprovalInstance::getFlowableProcessInstanceId, processInstanceId)
                 );
                 if (instance != null) {
+                    if (!Integer.valueOf(ApprovalInstanceStatus.PENDING.getCode()).equals(instance.getStatus())) {
+                        log.info("Ignore process completed event for non-pending instance: instanceId={}, status={}",
+                            instance.getId(), instance.getStatus());
+                        return;
+                    }
+
                     // Determine final status from business task results
                     List<BizApprovalTask> tasks = taskMapper.selectList(
                         new LambdaQueryWrapper<BizApprovalTask>()
@@ -75,5 +85,10 @@ public class ProcessEndEventListener implements FlowableEventListener {
     @Override
     public String getOnTransaction() {
         return null;
+    }
+
+    @Override
+    public List<FlowableEngineEventType> getTypes() {
+        return List.of(FlowableEngineEventType.PROCESS_COMPLETED);
     }
 }

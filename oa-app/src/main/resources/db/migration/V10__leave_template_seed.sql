@@ -66,4 +66,11 @@ VALUES (
   </process>
 </definitions>',
     1, 2, NOW(), NOW(), 0
-);
+)
+ON DUPLICATE KEY UPDATE
+    template_name = VALUES(template_name),
+    bpmn_xml = VALUES(bpmn_xml),
+    published_bpmn_xml = VALUES(published_bpmn_xml),
+    version = VALUES(version),
+    status = VALUES(status),
+    updated_at = NOW();

@@ -22,9 +22,11 @@ import com.oa.admin.approval.constant.AuditConstants;
 import com.oa.admin.approval.constant.FlowableConstants;
 import com.oa.admin.approval.enums.ApprovalInstanceStatus;
 import com.oa.admin.approval.enums.ApprovalTaskResult;
+import com.oa.admin.approval.enums.ApprovalTaskType;
 import com.oa.admin.approval.enums.NotificationType;
 import com.oa.admin.approval.enums.TemplateStatus;
 import com.oa.admin.approval.service.ApprovalCcService;
+import com.oa.admin.approval.service.ApprovalFormSchemaService;
 import com.oa.admin.approval.service.ApprovalService;
 import com.oa.admin.approval.service.ApprovalTemplateService;
 import com.oa.admin.approval.service.AuditLogService;
@@ -58,6 +60,46 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, BizApprovalInstance> implements ApprovalService {
+    private static final String BPMN_DIAGRAM_MARKER = "BPMNDiagram";
+    private static final String LEAVE_PROCESS_ID = "leave_request";
+    private static final String LEAVE_PROCESS_ID_ATTRIBUTE = "id=\"leave_request\"";
+    private static final String BPMN_DI_NAMESPACES =
+        "xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n" +
+        "             xmlns:omgdc=\"http://www.omg.org/spec/DD/20100524/DC\"\n" +
+        "             xmlns:omgdi=\"http://www.omg.org/spec/DD/20100524/DI\"\n" +
+        "             ";
+    private static final String LEAVE_PROCESS_DIAGRAM = """
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_leave_request">
+    <bpmndi:BPMNPlane id="BPMNPlane_leave_request" bpmnElement="leave_request">
+      <bpmndi:BPMNShape id="BPMNShape_startEvent" bpmnElement="startEvent">
+        <omgdc:Bounds x="120" y="160" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_task1" bpmnElement="task1">
+        <omgdc:Bounds x="300" y="138" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_task2" bpmnElement="task2">
+        <omgdc:Bounds x="480" y="138" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_endEvent" bpmnElement="endEvent">
+        <omgdc:Bounds x="660" y="160" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow1" bpmnElement="flow1">
+        <omgdi:waypoint x="156" y="178"/>
+        <omgdi:waypoint x="300" y="178"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow2" bpmnElement="flow2">
+        <omgdi:waypoint x="420" y="178"/>
+        <omgdi:waypoint x="480" y="178"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow3" bpmnElement="flow3">
+        <omgdi:waypoint x="600" y="178"/>
+        <omgdi:waypoint x="660" y="178"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+""";
+
     private final ApprovalTemplateService templateService;
     private final BizApprovalTaskMapper taskMapper;
     private final BizApprovalCcMapper ccMapper;
@@ -69,6 +111,7 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final ApprovalFormSchemaService formSchemaService;
 
     @Override
     @Transactional
@@ -86,36 +129,52 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
         Map<String, Object> variables = new HashMap<>();
         variables.put(FlowableConstants.VAR_INITIATOR, userId);
 
-        if (formData != null && !formData.isBlank()) {
-            try {
-                Map<String, Object> formFields = objectMapper.readValue(formData,
-                    new TypeReference<Map<String, Object>>() {});
-                variables.putAll(formFields);
-            } catch (Exception e) {
-                log.warn("Failed to parse formData as JSON for variables: {}", e.getMessage());
-            }
-        }
+        Map<String, Object> formFields = parseFormData(formData);
+        formSchemaService.validateSubmission(template.getFormConfig(), formFields);
+        variables.putAll(formFields);
 
-        var processInstance = runtimeService.startProcessInstanceByKey(
-            template.getTemplateKey(),
-            String.valueOf(userId),
-            variables
-        );
+        if (template.getFlowableProcessDefinitionId() == null || template.getFlowableProcessDefinitionId().isBlank()) {
+            throw new BusinessException(ErrorCode.TEMPLATE_NOT_PUBLISHED);
+        }
 
         BizApprovalInstance instance = new BizApprovalInstance();
         instance.setProcessTemplateId(templateId);
         instance.setInstanceTitle(title);
-        instance.setFlowableProcessInstanceId(processInstance.getId());
         instance.setInitiatorUserId(userId);
         instance.setStatus(ApprovalInstanceStatus.PENDING.getCode());
         instance.setFormData(formData);
         this.save(instance);
+
+        variables.put(FlowableConstants.VAR_APPROVAL_INSTANCE_ID, instance.getId());
+
+        var processInstance = runtimeService.startProcessInstanceById(
+            template.getFlowableProcessDefinitionId(),
+            String.valueOf(instance.getId()),
+            variables
+        );
+
+        instance.setFlowableProcessInstanceId(processInstance.getId());
+        this.updateById(instance);
 
         auditLogService.log(AuditConstants.MODULE_APPROVAL, AuditConstants.ACTION_SUBMIT,
             AuditConstants.TARGET_INSTANCE, instance.getId(),
             "{\"title\":\"" + title + "\",\"templateId\":" + templateId + "}");
 
         return instance;
+    }
+
+    private Map<String, Object> parseFormData(String formData) {
+        if (formData == null || formData.isBlank()) {
+            return new HashMap<>();
+        }
+        try {
+            return objectMapper.readValue(formData, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            throw new BusinessException(
+                ErrorCode.PARAM_ERROR.getCode(),
+                "表单数据必须是合法 JSON 对象"
+            );
+        }
     }
 
     @Override
@@ -259,6 +318,10 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
 
     @Override
     public List<BizApprovalTask> instanceTasks(Long instanceId) {
+        BizApprovalInstance instance = this.getById(instanceId);
+        if (instance != null) {
+            syncActiveTasks(instance);
+        }
         return taskMapper.selectList(
             new LambdaQueryWrapper<BizApprovalTask>()
                 .eq(BizApprovalTask::getApprovalInstanceId, instanceId)
@@ -331,7 +394,7 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
                 String processDefinitionId = historicInstance.getProcessDefinitionId();
                 var pd = repositoryService.getProcessDefinition(processDefinitionId);
                 var resourceStream = repositoryService.getResourceAsStream(pd.getDeploymentId(), pd.getResourceName());
-                bpmnXml = new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
+                bpmnXml = ensureDisplayDiagram(new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8));
                 resourceStream.close();
             } else {
                 bpmnXml = "";
@@ -346,6 +409,82 @@ public class ApprovalServiceImpl extends ServiceImpl<BizApprovalInstanceMapper, 
             .completedNodeIds(completedNodeIds)
             .currentNodeIds(currentNodeIds)
             .build();
+    }
+
+    private void syncActiveTasks(BizApprovalInstance instance) {
+        if (instance.getFlowableProcessInstanceId() == null
+            || !Integer.valueOf(ApprovalInstanceStatus.PENDING.getCode()).equals(instance.getStatus())) {
+            return;
+        }
+
+        List<Task> activeTasks;
+        try {
+            activeTasks = flowableTaskService.createTaskQuery()
+                .processInstanceId(instance.getFlowableProcessInstanceId())
+                .list();
+        } catch (Exception e) {
+            log.warn("Failed to sync active tasks for instance {}: {}", instance.getId(), e.getMessage());
+            return;
+        }
+        if (activeTasks == null || activeTasks.isEmpty()) {
+            return;
+        }
+
+        List<BizApprovalTask> existingTasks = taskMapper.selectList(
+            new LambdaQueryWrapper<BizApprovalTask>()
+                .eq(BizApprovalTask::getApprovalInstanceId, instance.getId())
+        );
+        Set<String> existingFlowableTaskIds = existingTasks.stream()
+            .map(BizApprovalTask::getFlowableTaskId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        for (Task activeTask : activeTasks) {
+            if (existingFlowableTaskIds.contains(activeTask.getId())) {
+                continue;
+            }
+            String assignee = activeTask.getAssignee();
+            if (assignee == null || assignee.isBlank()) {
+                log.warn("Skip syncing unassigned active task {} for instance {}",
+                    activeTask.getId(), instance.getId());
+                continue;
+            }
+
+            long assigneeUserId;
+            try {
+                assigneeUserId = Long.parseLong(assignee);
+            } catch (NumberFormatException e) {
+                log.warn("Skip syncing active task {} with invalid assignee {}",
+                    activeTask.getId(), assignee);
+                continue;
+            }
+
+            BizApprovalTask task = new BizApprovalTask();
+            task.setApprovalInstanceId(instance.getId());
+            task.setFlowableTaskId(activeTask.getId());
+            task.setAssigneeUserId(assigneeUserId);
+            task.setTaskName(activeTask.getName());
+            task.setTaskType(ApprovalTaskType.NORMAL.getCode());
+            taskMapper.insert(task);
+            existingFlowableTaskIds.add(activeTask.getId());
+            log.info("Synced missing approval task: instanceId={}, taskId={}, assignee={}",
+                instance.getId(), activeTask.getId(), assignee);
+        }
+    }
+
+    private String ensureDisplayDiagram(String bpmnXml) {
+        if (bpmnXml == null || bpmnXml.isBlank() || bpmnXml.contains(BPMN_DIAGRAM_MARKER)) {
+            return bpmnXml;
+        }
+        if (!bpmnXml.contains(LEAVE_PROCESS_ID_ATTRIBUTE)) {
+            return bpmnXml;
+        }
+
+        String xmlWithNamespaces = bpmnXml;
+        if (!xmlWithNamespaces.contains("xmlns:bpmndi")) {
+            xmlWithNamespaces = xmlWithNamespaces.replaceFirst("<definitions\\s+", "<definitions " + BPMN_DI_NAMESPACES);
+        }
+        return xmlWithNamespaces.replace("</definitions>", LEAVE_PROCESS_DIAGRAM + "</definitions>");
     }
 
     @Override

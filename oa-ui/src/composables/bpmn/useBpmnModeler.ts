@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import BpmnModeler from 'bpmn-js/lib/Modeler'
 import BpmnViewer from 'bpmn-js/lib/Viewer'
+import { normalizeBpmnXmlForViewer } from '@/bpmn/bpmn-utils'
 
 export type BpmnInstance = BpmnModeler | BpmnViewer
 
@@ -20,7 +21,7 @@ export function useBpmnModeler() {
     error.value = null
 
     try {
-      const result = await (modeler.value as BpmnModeler).importXML(xml)
+      const result = await (modeler.value as BpmnModeler).importXML(normalizeBpmnXmlForViewer(xml))
 
       if (result.warnings.length > 0) {
         console.warn('BPMN import warnings:', result.warnings)

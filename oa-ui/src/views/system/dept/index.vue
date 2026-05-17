@@ -14,7 +14,11 @@
       >
         <el-table-column prop="deptName" label="部门名称" />
         <el-table-column prop="sort" label="排序" width="80" />
-        <el-table-column prop="leaderUserId" label="负责人ID" width="100" />
+        <el-table-column label="负责人" min-width="140">
+          <template #default="{ row }">
+            {{ leaderLabel(row.leaderUserId) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-tag
@@ -58,8 +62,21 @@
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" />
         </el-form-item>
-        <el-form-item label="负责人ID">
-          <el-input-number v-model="form.leaderUserId" />
+        <el-form-item label="负责人">
+          <el-select
+            v-model="form.leaderUserId"
+            placeholder="选择负责人"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in userOptions"
+              :key="user.id"
+              :label="userLabel(user)"
+              :value="user.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status">
@@ -80,9 +97,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDeptTree, createDept, updateDept, deleteDept } from '@/api/system'
+import { getUserList } from '@/api/user'
+import type { SysUser } from '@/types'
 
 const loading = ref(false)
 const treeData = ref<any[]>([])
+const userOptions = ref<SysUser[]>([])
 const dialogVisible = ref(false)
 const editingDept = ref<any>(null)
 const form = reactive({
@@ -93,6 +113,16 @@ const form = reactive({
   status: 1,
 })
 
+function userLabel(user: SysUser) {
+  return user.nickname ? `${user.nickname}（${user.username}）` : user.username
+}
+
+function leaderLabel(leaderUserId?: number | null) {
+  if (!leaderUserId) return '-'
+  const user = userOptions.value.find((item) => item.id === leaderUserId)
+  return user ? userLabel(user) : `用户 #${leaderUserId}`
+}
+
 async function loadData() {
   loading.value = true
   try {
@@ -101,6 +131,15 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+async function loadUsers() {
+  const data: any = await getUserList({
+    status: 1,
+    page: 1,
+    pageSize: 200,
+  })
+  userOptions.value = data.list || []
 }
 
 function openDialog(dept?: any, parentId?: number) {
@@ -151,7 +190,10 @@ async function handleDelete(id: number) {
   }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  loadUsers()
+})
 </script>
 
 <style scoped>

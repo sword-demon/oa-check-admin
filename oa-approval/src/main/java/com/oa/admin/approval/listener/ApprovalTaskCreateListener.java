@@ -36,6 +36,9 @@ public class ApprovalTaskCreateListener implements TaskListener {
                 .eq(BizApprovalInstance::getFlowableProcessInstanceId, processInstanceId)
         );
         if (instance == null) {
+            instance = findInstanceByVariable(delegateTask);
+        }
+        if (instance == null) {
             log.warn("No business instance found for process: {}", processInstanceId);
             return;
         }
@@ -61,6 +64,20 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
         log.info("Created approval task: instanceId={}, taskId={}, assignee={}, name={}, type={}",
             instance.getId(), delegateTask.getId(), assignee, delegateTask.getName(), taskType);
+    }
+
+    private BizApprovalInstance findInstanceByVariable(DelegateTask delegateTask) {
+        Object instanceId = delegateTask.getVariable(FlowableConstants.VAR_APPROVAL_INSTANCE_ID);
+        if (instanceId == null) {
+            return null;
+        }
+        try {
+            return instanceMapper.selectById(Long.parseLong(instanceId.toString()));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid approval instance id variable on task {}: {}",
+                delegateTask.getId(), instanceId);
+            return null;
+        }
     }
 
     /**

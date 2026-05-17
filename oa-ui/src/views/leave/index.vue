@@ -1,20 +1,28 @@
 <template>
-  <div>
-    <el-card>
-      <div class="toolbar">
-        <div class="search">
+  <div class="page-shell">
+    <section class="page-header">
+      <div class="page-header__titles">
+        <p class="page-subtitle page-subtitle--eyebrow">Leave Requests</p>
+        <h1 class="page-title">请假管理</h1>
+        <p class="page-subtitle">管理个人请假单据，跟踪审批状态，并在草稿或驳回后继续编辑提交。</p>
+      </div>
+    </section>
+
+    <el-card class="page-panel">
+      <div class="page-toolbar">
+        <div class="page-toolbar__filters">
           <el-input
             v-model="search.title"
             placeholder="申请标题"
             clearable
-            style="width: 200px"
+            class="field--lg"
             @clear="loadData"
           />
           <el-select
             v-model="search.leaveType"
             placeholder="请假类型"
             clearable
-            style="width: 130px; margin-left: 10px"
+            class="field--sm"
             @change="loadData"
           >
             <el-option label="年假" :value="1" />
@@ -25,7 +33,7 @@
             v-model="search.status"
             placeholder="状态"
             clearable
-            style="width: 120px; margin-left: 10px"
+            class="field--sm"
             @change="loadData"
           >
             <el-option label="草稿" :value="0" />
@@ -34,13 +42,16 @@
             <el-option label="已驳回" :value="3" />
             <el-option label="已取消" :value="4" />
           </el-select>
-          <el-button type="primary" style="margin-left: 10px" @click="loadData">
+          <el-button type="primary" @click="loadData">
             搜索
           </el-button>
         </div>
-        <el-button type="primary" @click="openFormDialog()">新建请假</el-button>
+        <div class="page-toolbar__actions">
+          <span class="page-toolbar__meta">当前记录 {{ total }} 条</span>
+          <el-button type="primary" @click="openFormDialog()">新建请假</el-button>
+        </div>
       </div>
-      <el-table :data="tableData" stripe v-loading="loading">
+      <el-table :data="tableData" stripe v-loading="loading" class="page-table">
         <el-table-column prop="title" label="标题" min-width="150" />
         <el-table-column prop="leaveType" label="类型" width="90">
           <template #default="{ row }">
@@ -93,14 +104,15 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :total="total"
-        layout="total, prev, pager, next"
-        style="margin-top: 15px; justify-content: flex-end"
-        @current-change="loadData"
-      />
+      <div class="page-pagination">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          @current-change="loadData"
+        />
+      </div>
     </el-card>
 
     <LeaveFormDialog
@@ -205,8 +217,3 @@ async function handleDelete(id: number) {
 
 onMounted(loadData)
 </script>
-
-<style scoped>
-.toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
-.search { display: flex; align-items: center; }
-</style>
