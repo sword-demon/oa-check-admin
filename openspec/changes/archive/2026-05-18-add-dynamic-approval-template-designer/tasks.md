@@ -52,6 +52,6 @@
 
 - [x] 7.1 Run backend unit tests for `oa-approval` and affected modules.
 - [x] 7.2 Run frontend unit tests and production build for `oa-ui`.
-- [ ] 7.3 Manually verify create template -> design form -> design flow -> publish -> submit -> approve -> view detail.
+- [x] 7.3 Manually verify create template -> design form -> design flow -> publish -> submit -> approve -> view detail.
 - [x] 7.4 Document the form schema structure and supported field/node types in project docs.
 - [x] 7.5 Record known limitations for attachment storage, advanced expressions, and complex conditional logic.
