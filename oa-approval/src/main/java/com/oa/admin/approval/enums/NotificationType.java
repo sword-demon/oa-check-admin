@@ -2,6 +2,9 @@ package com.oa.admin.approval.enums;
 
 import lombok.Getter;
 import lombok.AllArgsConstructor;
+/**
+ * @author wxvirus
+ */
 
 @Getter
 @AllArgsConstructor

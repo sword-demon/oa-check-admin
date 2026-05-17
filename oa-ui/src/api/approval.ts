@@ -21,12 +21,12 @@ export function withdrawInstance(instanceId: number) {
   return request.post<never, void>(`/approval/${instanceId}/withdraw`)
 }
 
-export function getTemplates(params?: { page?: number; size?: number }) {
+export function getTemplates(params?: { templateName?: string; status?: number; page?: number; pageSize?: number; size?: number }) {
   return request.get<never, PageData<ProcessTemplate>>('/approval/template', { params })
 }
 
 export function createTemplate(data: Record<string, unknown>) {
-  return request.post<never, never>('/approval/template', data)
+  return request.post<never, ProcessTemplate>('/approval/template', data)
 }
 
 export function getMyCc() {

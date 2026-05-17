@@ -6,6 +6,9 @@ import com.oa.admin.approval.entity.BizProcessNodeConfig;
 import com.oa.admin.approval.entity.BizProcessTemplate;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface ApprovalTemplateService extends IService<BizProcessTemplate> {
 

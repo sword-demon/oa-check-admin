@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+/**
+ * @author wxvirus
+ */
 
 @RestController
 @RequestMapping("/api/v1/auth")

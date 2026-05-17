@@ -7,16 +7,22 @@ import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
+import com.oa.admin.common.event.ApprovalCompletedEvent;
+import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEventListener;
 import org.flowable.engine.impl.persistence.entity.ExecutionEntity;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 @Slf4j
 @Component
@@ -24,9 +30,13 @@ import java.util.List;
 public class ProcessEndEventListener implements FlowableEventListener {
     private final BizApprovalInstanceMapper instanceMapper;
     private final BizApprovalTaskMapper taskMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void onEvent(FlowableEvent event) {
+        if (event.getType() != FlowableEngineEventType.PROCESS_COMPLETED) {
+            return;
+        }
         if (event instanceof FlowableEngineEntityEvent entityEvent) {
             if (entityEvent.getEntity() instanceof ExecutionEntity execution) {
                 String processInstanceId = execution.getProcessInstanceId();
@@ -35,6 +45,12 @@ public class ProcessEndEventListener implements FlowableEventListener {
                         .eq(BizApprovalInstance::getFlowableProcessInstanceId, processInstanceId)
                 );
                 if (instance != null) {
+                    if (!Integer.valueOf(ApprovalInstanceStatus.PENDING.getCode()).equals(instance.getStatus())) {
+                        log.info("Ignore process completed event for non-pending instance: instanceId={}, status={}",
+                            instance.getId(), instance.getStatus());
+                        return;
+                    }
+
                     // Determine final status from business task results
                     List<BizApprovalTask> tasks = taskMapper.selectList(
                         new LambdaQueryWrapper<BizApprovalTask>()
@@ -48,6 +64,9 @@ public class ProcessEndEventListener implements FlowableEventListener {
                     instance.setEndAt(LocalDateTime.now());
                     instanceMapper.updateById(instance);
                     log.info("Process completed: instanceId={}, status={}", instance.getId(), anyRejected ? "rejected" : "approved");
+
+                    int result = anyRejected ? ApprovalTaskResult.REJECTED.getCode() : ApprovalTaskResult.APPROVED.getCode();
+                    eventPublisher.publishEvent(new ApprovalCompletedEvent(this, instance.getId(), instance.getFormData(), result));
                 }
             }
         }
@@ -66,5 +85,10 @@ public class ProcessEndEventListener implements FlowableEventListener {
     @Override
     public String getOnTransaction() {
         return null;
+    }
+
+    @Override
+    public List<FlowableEngineEventType> getTypes() {
+        return List.of(FlowableEngineEventType.PROCESS_COMPLETED);
     }
 }

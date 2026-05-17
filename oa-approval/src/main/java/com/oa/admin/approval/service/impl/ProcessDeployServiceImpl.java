@@ -14,6 +14,9 @@ import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+/**
+ * @author wxvirus
+ */
 
 @Slf4j
 @Service
@@ -51,6 +54,7 @@ public class ProcessDeployServiceImpl implements ProcessDeployService {
         log.info("Deployed template {}: deploymentId={}, processDefinitionId={}",
             template.getTemplateKey(), deployment.getId(), processDefinition.getId());
 
+        template.setFlowableDeploymentId(deployment.getId());
         return processDefinition.getId();
     }
 

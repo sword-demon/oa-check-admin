@@ -8,6 +8,9 @@ import com.oa.admin.common.result.PageResult;
 import com.oa.admin.common.result.R;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+/**
+ * @author wxvirus
+ */
 
 @RestController
 @RequestMapping("/api/v1/admin/approval")

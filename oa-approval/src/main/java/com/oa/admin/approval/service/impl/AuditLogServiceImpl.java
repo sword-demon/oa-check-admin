@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+/**
+ * @author wxvirus
+ */
 
 @Service
 public class AuditLogServiceImpl extends ServiceImpl<BizAuditLogMapper, BizAuditLog> implements AuditLogService {

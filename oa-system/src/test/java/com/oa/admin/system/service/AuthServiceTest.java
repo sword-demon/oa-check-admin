@@ -18,6 +18,9 @@ import java.lang.reflect.Field;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+/**
+ * @author wxvirus
+ */
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {

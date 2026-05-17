@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.oa.admin.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+/**
+ * @author wxvirus
+ */
 
 @Data
 @EqualsAndHashCode(callSuper = true)

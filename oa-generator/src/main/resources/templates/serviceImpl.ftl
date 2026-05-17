@@ -5,6 +5,15 @@ import ${ctx.packageName}.dto.${ctx.entity.queryDtoName};
 import ${ctx.packageName}.dto.${ctx.entity.updateDtoName};
 import ${ctx.packageName}.mapper.${ctx.entity.mapperName};
 import ${ctx.packageName}.entity.${ctx.entity.name};
+<#assign enumImports = []>
+<#list ctx.entity.fields as f>
+    <#if f.enumRef?? && !(enumImports?seq_contains(ctx.packageName + ".enums." + f.enumRef))>
+        <#assign enumImports = enumImports + [ctx.packageName + ".enums." + f.enumRef]>
+    </#if>
+</#list>
+<#list enumImports?sort as importName>
+import ${importName};
+</#list>
 import ${ctx.packageName}.service.${ctx.entity.serviceName};
 import ${ctx.packageName}.vo.${ctx.entity.voName};
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -29,7 +38,7 @@ public class ${ctx.entity.serviceImplName} extends ServiceImpl<${ctx.entity.mapp
         wrapper
 <#list ctx.entity.searchableFields as f><#if f.isStringLike()>
                 .like(query.get${f.capitalizedName}() != null && !query.get${f.capitalizedName}().isEmpty(), ${ctx.entity.name}::get${f.capitalizedName}, query.get${f.capitalizedName}())<#else>
-                .eq(query.get${f.capitalizedName}() != null, ${ctx.entity.name}::get${f.capitalizedName}, query.get${f.capitalizedName}())</#if>
+                .eq(query.get${f.capitalizedName}() != null, ${ctx.entity.name}::get${f.capitalizedName}, <#if f.enumRef??>query.get${f.capitalizedName}().getCode()<#else>query.get${f.capitalizedName}()</#if>)</#if>
 </#list>
                 .orderByDesc(${ctx.entity.name}::getCreatedAt);
 <#else>
@@ -67,7 +76,7 @@ public class ${ctx.entity.serviceImplName} extends ServiceImpl<${ctx.entity.mapp
     private ${ctx.entity.name} toEntity(${ctx.entity.createDtoName} request) {
         ${ctx.entity.name} entity = new ${ctx.entity.name}();
 <#list ctx.entity.fields as f>
-        entity.set${f.capitalizedName}(request.get${f.capitalizedName}());
+        entity.set${f.capitalizedName}(<#if f.enumRef??>request.get${f.capitalizedName}() == null ? null : request.get${f.capitalizedName}().getCode()<#else>request.get${f.capitalizedName}()</#if>);
 </#list>
         return entity;
     }
@@ -75,7 +84,7 @@ public class ${ctx.entity.serviceImplName} extends ServiceImpl<${ctx.entity.mapp
     private ${ctx.entity.name} toEntity(${ctx.entity.updateDtoName} request) {
         ${ctx.entity.name} entity = new ${ctx.entity.name}();
 <#list ctx.entity.fields as f>
-        entity.set${f.capitalizedName}(request.get${f.capitalizedName}());
+        entity.set${f.capitalizedName}(<#if f.enumRef??>request.get${f.capitalizedName}() == null ? null : request.get${f.capitalizedName}().getCode()<#else>request.get${f.capitalizedName}()</#if>);
 </#list>
         return entity;
     }
@@ -87,7 +96,7 @@ public class ${ctx.entity.serviceImplName} extends ServiceImpl<${ctx.entity.mapp
         ${ctx.entity.voName} vo = new ${ctx.entity.voName}();
         vo.setId(entity.getId());
 <#list ctx.entity.fields as f>
-        vo.set${f.capitalizedName}(entity.get${f.capitalizedName}());
+        vo.set${f.capitalizedName}(<#if f.enumRef??>entity.get${f.capitalizedName}() == null ? null : ${f.enumRef}.fromCode(entity.get${f.capitalizedName}())<#else>entity.get${f.capitalizedName}()</#if>);
 </#list>
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());

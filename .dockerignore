@@ -1,0 +1,8 @@
+**/target/
+**/node_modules/
+.git/
+.idea/
+.vscode/
+.DS_Store
+oa-ui/dist/
+oa-ui/.vite/

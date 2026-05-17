@@ -11,6 +11,9 @@ import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.common.result.PageResult;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface ApprovalService extends IService<BizApprovalInstance> {
 

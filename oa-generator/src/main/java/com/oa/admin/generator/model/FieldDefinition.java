@@ -2,6 +2,9 @@ package com.oa.admin.generator.model;
 
 import com.oa.admin.generator.util.NamingUtils;
 import lombok.Data;
+/**
+ * @author wxvirus
+ */
 
 @Data
 public class FieldDefinition {

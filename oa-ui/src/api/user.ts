@@ -1,11 +1,12 @@
 import request from '@/utils/request'
+import type { PageData, SysUser } from '@/types'
 
 export function getUserList(params: { username?: string; status?: number; page: number; pageSize: number }) {
-  return request.get('/system/user', { params })
+  return request.get('/system/user', { params }) as Promise<PageData<SysUser>>
 }
 
 export function getUser(id: number) {
-  return request.get(`/system/user/${id}`)
+  return request.get(`/system/user/${id}`) as Promise<SysUser>
 }
 
 export function createUser(data: Record<string, any>) {

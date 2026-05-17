@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 /**
  * Resolves user ID lists for multi-instance (countersign/or-sign) collections.
  * Referenced in BPMN as ${candidateUserResolver.resolveRoleUsers(roleId)}.
+ * @author wxvirus
  */
 @Component("candidateUserResolver")
 @RequiredArgsConstructor

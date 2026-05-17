@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import type { ProcessTemplate } from '@/types'
 
 export interface NodeConfig {
   id?: number
@@ -38,7 +39,7 @@ export function createNewVersion(id: number) {
 }
 
 export function getTemplate(id: number) {
-  return request.get(`/approval/template/${id}`)
+  return request.get(`/approval/template/${id}`) as Promise<ProcessTemplate>
 }
 
 export function updateTemplate(id: number, data: Record<string, unknown>) {

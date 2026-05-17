@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+/**
+ * @author wxvirus
+ */
 
 @RestController
 @RequestMapping("/api/v1/approval")
@@ -150,16 +153,14 @@ public class ApprovalController {
     @SaCheckPermission("approval:template:create")
     @PostMapping("/template")
     public R<BizProcessTemplate> createTemplate(@RequestBody BizProcessTemplate template) {
-        templateService.save(template);
-        return R.ok(template);
+        return R.ok(templateService.saveDraft(template, null));
     }
 
     @SaCheckPermission("approval:template:edit")
     @PutMapping("/template/{id}")
     public R<BizProcessTemplate> updateTemplate(@PathVariable Long id, @RequestBody BizProcessTemplate template) {
         template.setId(id);
-        templateService.updateById(template);
-        return R.ok(template);
+        return R.ok(templateService.saveDraft(template, null));
     }
 
     @SaCheckPermission("approval:template:delete")

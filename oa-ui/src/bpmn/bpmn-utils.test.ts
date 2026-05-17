@@ -4,6 +4,8 @@ import {
   extractNodeConfigs,
   validateProcess,
   injectTaskListeners,
+  normalizeBpmnXmlForViewer,
+  parseSimpleBpmnDiagram,
 } from './bpmn-utils'
 
 // ---------------------------------------------------------------------------
@@ -42,6 +44,88 @@ describe('generateDefaultXml', () => {
     expect(xml).toContain('bpmndi:BPMNDiagram')
     expect(xml).toContain('omgdc:Bounds')
     expect(xml).toContain('omgdi:waypoint')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// normalizeBpmnXmlForViewer
+// ---------------------------------------------------------------------------
+describe('normalizeBpmnXmlForViewer', () => {
+  it('generates BPMNDI when returned diagram references stale element ids', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <process id="leave_request" name="请假审批流程" isExecutable="true">
+    <startEvent id="startEvent" name="发起申请" />
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="task1" />
+    <userTask id="task1" name="组长审批" />
+    <sequenceFlow id="flow2" sourceRef="task1" targetRef="task2" />
+    <userTask id="task2" name="经理审批" />
+    <sequenceFlow id="flow3" sourceRef="task2" targetRef="ccTask" />
+    <serviceTask id="ccTask" name="抄送" />
+    <sequenceFlow id="flow4" sourceRef="ccTask" targetRef="endEvent" />
+    <endEvent id="endEvent" name="流程结束" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_leave_request">
+    <bpmndi:BPMNPlane id="BPMNPlane_leave_request" bpmnElement="leave_request">
+      <bpmndi:BPMNShape id="BPMNShape_start" bpmnElement="start">
+        <omgdc:Bounds x="120" y="160" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>`
+
+    const normalized = normalizeBpmnXmlForViewer(xml)
+
+    expect(normalized).toContain('bpmnElement="startEvent"')
+    expect(normalized).toContain('bpmnElement="task1"')
+    expect(normalized).toContain('bpmnElement="task2"')
+    expect(normalized).toContain('bpmnElement="ccTask"')
+    expect(normalized).toContain('bpmnElement="endEvent"')
+    expect(normalized).toContain('bpmnElement="flow4"')
+    expect(normalized).not.toContain('bpmnElement="start"')
+  })
+
+  it('keeps XML unchanged when diagram already covers all nodes and flows', () => {
+    const xml = generateDefaultXml('leave_request', '请假流程')
+
+    expect(normalizeBpmnXmlForViewer(xml)).toBe(xml)
+  })
+
+  it('returns original XML when parsing fails', () => {
+    const xml = '<definitions><process></definitions>'
+
+    expect(normalizeBpmnXmlForViewer(xml)).toBe(xml)
+  })
+})
+
+describe('parseSimpleBpmnDiagram', () => {
+  it('extracts process nodes and sequence flows without relying on BPMNDI', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <process id="leave_request" name="请假审批流程" isExecutable="true">
+    <startEvent id="startEvent" name="发起申请" />
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="task1" />
+    <userTask id="task1" name="组长审批" />
+    <sequenceFlow id="flow2" sourceRef="task1" targetRef="endEvent" />
+    <endEvent id="endEvent" name="流程结束" />
+  </process>
+  <bpmndi:BPMNDiagram xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI">
+    <bpmndi:BPMNPlane bpmnElement="leave_request" />
+  </bpmndi:BPMNDiagram>
+</definitions>`
+
+    const diagram = parseSimpleBpmnDiagram(xml)
+
+    expect(diagram?.nodes.map((node) => node.id)).toEqual(['startEvent', 'task1', 'endEvent'])
+    expect(diagram?.nodes[1].name).toBe('组长审批')
+    expect(diagram?.flows.map((flow) => flow.id)).toEqual(['flow1', 'flow2'])
+  })
+
+  it('returns null for invalid XML', () => {
+    expect(parseSimpleBpmnDiagram('<definitions><process></definitions>')).toBeNull()
   })
 })
 
@@ -221,6 +305,61 @@ describe('validateProcess', () => {
       },
       { businessObject: { $type: 'bpmn:EndEvent', id: 'end1', incoming: [{}] } },
       { businessObject: { $type: 'bpmn:EndEvent', id: 'end2', incoming: [{}] } },
+    ]
+    const modeler = makeMockModeler(elements)
+    const errors = validateProcess(modeler as any)
+
+    expect(errors).toHaveLength(0)
+  })
+
+  it('uses diagram element connections when imported XML has no businessObject links', () => {
+    const flow1 = {}
+    const flow2 = {}
+    const flow3 = {}
+    const flow4 = {}
+    const elements = [
+      {
+        type: 'bpmn:StartEvent',
+        businessObject: { $type: 'bpmn:StartEvent', id: 'start', name: '提交申请' },
+        outgoing: [flow1],
+      },
+      {
+        type: 'bpmn:UserTask',
+        businessObject: { $type: 'bpmn:UserTask', id: 'deptLeaderApprove', name: '部门负责人审批' },
+        incoming: [flow1],
+        outgoing: [flow2],
+      },
+      {
+        type: 'bpmn:ExclusiveGateway',
+        businessObject: { $type: 'bpmn:ExclusiveGateway', id: 'gateway1', name: '审批结果' },
+        incoming: [flow2],
+        outgoing: [flow3, flow4],
+      },
+      {
+        type: 'bpmn:EndEvent',
+        businessObject: { $type: 'bpmn:EndEvent', id: 'endApproved', name: '审批通过' },
+        incoming: [flow3],
+      },
+      {
+        type: 'bpmn:EndEvent',
+        businessObject: { $type: 'bpmn:EndEvent', id: 'endRejected', name: '审批驳回' },
+        incoming: [flow4],
+      },
+    ]
+    const modeler = makeMockModeler(elements)
+    const errors = validateProcess(modeler as any)
+
+    expect(errors).toHaveLength(0)
+  })
+
+  it('ignores label elements that share the same businessObject', () => {
+    const startBo = { $type: 'bpmn:StartEvent', id: 'start', name: '开始' }
+    const endBo = { $type: 'bpmn:EndEvent', id: 'end', name: '结束' }
+    const elements = [
+      { type: 'label', businessObject: startBo, labelTarget: {} },
+      { type: 'bpmn:StartEvent', businessObject: startBo, outgoing: [{}] },
+      { type: 'label', businessObject: endBo, labelTarget: {} },
+      { type: 'bpmn:EndEvent', businessObject: endBo, incoming: [{}] },
     ]
     const modeler = makeMockModeler(elements)
     const errors = validateProcess(modeler as any)

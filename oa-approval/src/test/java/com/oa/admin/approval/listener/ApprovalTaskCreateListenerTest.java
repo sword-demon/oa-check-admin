@@ -15,6 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+/**
+ * @author wxvirus
+ */
 
 @ExtendWith(MockitoExtension.class)
 class ApprovalTaskCreateListenerTest {
@@ -101,9 +104,33 @@ class ApprovalTaskCreateListenerTest {
         when(delegateTask.getProcessInstanceId()).thenReturn("proc-unknown");
         when(delegateTask.getAssignee()).thenReturn("10");
         when(instanceMapper.selectOne(any())).thenReturn(null);
+        when(delegateTask.getVariable("approvalInstanceId")).thenReturn(null);
 
         listener.notify(delegateTask);
 
         verify(taskMapper, never()).insert(any(BizApprovalTask.class));
+    }
+
+    @Test
+    void notify_processInstanceNotUpdatedYet_findsBusinessInstanceByVariable() {
+        when(delegateTask.getProcessInstanceId()).thenReturn("proc-new");
+        when(delegateTask.getAssignee()).thenReturn("10");
+        when(delegateTask.getId()).thenReturn("task-1");
+        when(delegateTask.getName()).thenReturn("Approve");
+        when(delegateTask.getVariable("approvalInstanceId")).thenReturn(100L);
+        when(delegateTask.getVariableLocal("nrOfInstances")).thenReturn(null);
+        when(delegateTask.getVariable("nrOfInstances")).thenReturn(null);
+        when(instanceMapper.selectOne(any())).thenReturn(null);
+
+        BizApprovalInstance instance = new BizApprovalInstance();
+        instance.setId(100L);
+        when(instanceMapper.selectById(100L)).thenReturn(instance);
+
+        listener.notify(delegateTask);
+
+        ArgumentCaptor<BizApprovalTask> captor = ArgumentCaptor.forClass(BizApprovalTask.class);
+        verify(taskMapper).insert(captor.capture());
+        assertEquals(100L, captor.getValue().getApprovalInstanceId());
+        assertEquals(10L, captor.getValue().getAssigneeUserId());
     }
 }

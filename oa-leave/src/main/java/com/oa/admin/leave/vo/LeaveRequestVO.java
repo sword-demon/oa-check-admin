@@ -1,5 +1,7 @@
 package com.oa.admin.leave.vo;
 
+import com.oa.admin.leave.enums.LeaveStatus;
+import com.oa.admin.leave.enums.LeaveType;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -16,7 +18,7 @@ public class LeaveRequestVO {
     private String title;
 
     /** 请假类型 */
-    private Integer leaveType;
+    private LeaveType leaveType;
 
     /** 开始时间 */
     private LocalDateTime startTime;
@@ -31,7 +33,10 @@ public class LeaveRequestVO {
     private Long applicantUserId;
 
     /** 状态 */
-    private Integer status;
+    private LeaveStatus status;
+
+    /** 关联审批实例ID */
+    private Long approvalInstanceId;
 
     private LocalDateTime createdAt;
 

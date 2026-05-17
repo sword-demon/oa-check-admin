@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.delegate.TaskListener;
 import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
+/**
+ * @author wxvirus
+ */
 
 @Slf4j
 @Component
@@ -32,6 +35,9 @@ public class ApprovalTaskCreateListener implements TaskListener {
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizApprovalInstance>()
                 .eq(BizApprovalInstance::getFlowableProcessInstanceId, processInstanceId)
         );
+        if (instance == null) {
+            instance = findInstanceByVariable(delegateTask);
+        }
         if (instance == null) {
             log.warn("No business instance found for process: {}", processInstanceId);
             return;
@@ -58,6 +64,20 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
         log.info("Created approval task: instanceId={}, taskId={}, assignee={}, name={}, type={}",
             instance.getId(), delegateTask.getId(), assignee, delegateTask.getName(), taskType);
+    }
+
+    private BizApprovalInstance findInstanceByVariable(DelegateTask delegateTask) {
+        Object instanceId = delegateTask.getVariable(FlowableConstants.VAR_APPROVAL_INSTANCE_ID);
+        if (instanceId == null) {
+            return null;
+        }
+        try {
+            return instanceMapper.selectById(Long.parseLong(instanceId.toString()));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid approval instance id variable on task {}: {}",
+                delegateTask.getId(), instanceId);
+            return null;
+        }
     }
 
     /**

@@ -41,4 +41,7 @@ public class LeaveRequest extends BaseEntity {
     /** 状态 */
     private Integer status;
 
+    /** 关联审批实例ID */
+    private Long approvalInstanceId;
+
 }

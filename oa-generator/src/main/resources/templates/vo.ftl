@@ -2,7 +2,9 @@ package ${ctx.packageName}.vo;
 
 <#assign imports = ["java.time.LocalDateTime"]>
 <#list ctx.entity.fields as f>
-    <#if TypeMapper.getImport(f.type)?? && !(imports?seq_contains(TypeMapper.getImport(f.type)))>
+    <#if f.enumRef?? && !(imports?seq_contains(ctx.packageName + ".enums." + f.enumRef))>
+        <#assign imports = imports + [ctx.packageName + ".enums." + f.enumRef]>
+    <#elseif TypeMapper.getImport(f.type)?? && !(imports?seq_contains(TypeMapper.getImport(f.type)))>
         <#assign imports = imports + [TypeMapper.getImport(f.type)]>
     </#if>
 </#list>
@@ -24,7 +26,7 @@ public class ${ctx.entity.voName} {
     <#if f.comment??>
     /** ${f.comment} */
     </#if>
-    private ${TypeMapper.getSimpleJavaType(f.type)} ${f.name};
+    private <#if f.enumRef??>${f.enumRef}<#else>${TypeMapper.getSimpleJavaType(f.type)}</#if> ${f.name};
 
 </#list>
     private LocalDateTime createdAt;

@@ -75,8 +75,14 @@ const reassignVisible = ref(false)
 const reassignTaskId = ref(0)
 const reassignTarget = ref(0)
 
-function statusType(status: number): string {
-  const map: Record<number, string> = { 1: 'info', 2: 'success', 3: 'danger', 4: 'warning', 5: 'info' }
+function statusType(status: number): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<number, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
+    1: 'info',
+    2: 'success',
+    3: 'danger',
+    4: 'warning',
+    5: 'info',
+  }
   return map[status] || 'info'
 }
 

@@ -5,6 +5,9 @@ import com.oa.admin.common.result.PageResult;
 import com.oa.admin.system.entity.SysUser;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface SysUserService extends IService<SysUser> {
 

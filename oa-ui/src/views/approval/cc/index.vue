@@ -1,8 +1,20 @@
 <template>
-  <div>
-    <el-card>
-      <template #header>抄送给我的</template>
-      <el-table :data="ccList" stripe v-loading="loading">
+  <div class="page-shell">
+    <section class="page-header">
+      <div class="page-header__titles">
+        <p class="page-subtitle page-subtitle--eyebrow">Copy Center</p>
+        <h1 class="page-title">抄送给我的</h1>
+        <p class="page-subtitle">查看抄送记录、阅读时间，并补充打开对应审批实例的详情页。</p>
+      </div>
+    </section>
+
+    <el-card class="page-panel">
+      <div class="page-toolbar">
+        <div class="page-toolbar__filters">
+          <span class="page-toolbar__meta">共 {{ ccList.length }} 条抄送</span>
+        </div>
+      </div>
+      <el-table :data="ccList" stripe v-loading="loading" class="page-table">
         <el-table-column prop="instanceTitle" label="申请标题" min-width="140" />
         <el-table-column prop="ccReason" label="抄送原因" min-width="120" />
         <el-table-column prop="readAt" label="阅读时间" width="180">

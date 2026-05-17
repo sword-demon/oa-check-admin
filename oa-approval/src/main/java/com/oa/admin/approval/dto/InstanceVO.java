@@ -2,6 +2,9 @@ package com.oa.admin.approval.dto;
 
 import lombok.Builder;
 import lombok.Data;
+/**
+ * @author wxvirus
+ */
 
 @Data
 @Builder
