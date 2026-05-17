@@ -11,6 +11,9 @@ import com.oa.admin.system.mapper.SysUserMapper;
 import com.oa.admin.system.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+/**
+ * @author wxvirus
+ */
 
 @Service
 @RequiredArgsConstructor

@@ -2,6 +2,9 @@ package com.oa.admin.common.exception;
 
 import com.oa.admin.common.result.ErrorCode;
 import lombok.Getter;
+/**
+ * @author wxvirus
+ */
 
 @Getter
 public class BusinessException extends RuntimeException {

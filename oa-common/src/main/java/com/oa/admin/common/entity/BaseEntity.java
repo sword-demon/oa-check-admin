@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.time.LocalDateTime;
+/**
+ * @author wxvirus
+ */
 
 @Data
 public class BaseEntity {

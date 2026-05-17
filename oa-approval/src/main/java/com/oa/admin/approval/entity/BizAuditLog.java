@@ -7,6 +7,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.oa.admin.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+/**
+ * @author wxvirus
+ */
 
 @Data
 @EqualsAndHashCode(callSuper = true)

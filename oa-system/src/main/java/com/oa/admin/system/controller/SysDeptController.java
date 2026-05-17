@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 @RestController
 @RequestMapping("/api/v1/system/dept")

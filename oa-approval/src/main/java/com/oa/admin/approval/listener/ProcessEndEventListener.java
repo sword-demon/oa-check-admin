@@ -7,16 +7,21 @@ import com.oa.admin.approval.entity.BizApprovalInstance;
 import com.oa.admin.approval.entity.BizApprovalTask;
 import com.oa.admin.approval.mapper.BizApprovalInstanceMapper;
 import com.oa.admin.approval.mapper.BizApprovalTaskMapper;
+import com.oa.admin.common.event.ApprovalCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEventListener;
 import org.flowable.engine.impl.persistence.entity.ExecutionEntity;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 @Slf4j
 @Component
@@ -24,6 +29,7 @@ import java.util.List;
 public class ProcessEndEventListener implements FlowableEventListener {
     private final BizApprovalInstanceMapper instanceMapper;
     private final BizApprovalTaskMapper taskMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void onEvent(FlowableEvent event) {
@@ -48,6 +54,9 @@ public class ProcessEndEventListener implements FlowableEventListener {
                     instance.setEndAt(LocalDateTime.now());
                     instanceMapper.updateById(instance);
                     log.info("Process completed: instanceId={}, status={}", instance.getId(), anyRejected ? "rejected" : "approved");
+
+                    int result = anyRejected ? ApprovalTaskResult.REJECTED.getCode() : ApprovalTaskResult.APPROVED.getCode();
+                    eventPublisher.publishEvent(new ApprovalCompletedEvent(this, instance.getId(), instance.getFormData(), result));
                 }
             }
         }

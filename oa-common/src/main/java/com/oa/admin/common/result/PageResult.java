@@ -2,6 +2,9 @@ package com.oa.admin.common.result;
 
 import lombok.Data;
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 @Data
 public class PageResult<T> {

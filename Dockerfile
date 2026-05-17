@@ -1,5 +1,5 @@
 # Build stage
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY oa-common/pom.xml oa-common/
@@ -11,7 +11,7 @@ COPY . .
 RUN mvn package -DskipTests -B
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/oa-app/target/*.jar app.jar
 EXPOSE 8080

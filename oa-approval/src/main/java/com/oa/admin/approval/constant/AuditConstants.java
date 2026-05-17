@@ -1,4 +1,7 @@
 package com.oa.admin.approval.constant;
+/**
+ * @author wxvirus
+ */
 
 public final class AuditConstants {
     public static final String MODULE_APPROVAL = "approval";

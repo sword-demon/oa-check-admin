@@ -14,6 +14,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+/**
+ * @author wxvirus
+ */
 
 class GlobalExceptionHandlerTest {
 

@@ -2,6 +2,9 @@ package com.oa.admin.common.result;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+/**
+ * @author wxvirus
+ */
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -17,6 +17,10 @@
             <artifactId>oa-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.oa</groupId>
+            <artifactId>oa-approval</artifactId>
+        </dependency>
+        <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-spring-boot3-starter</artifactId>
         </dependency>

@@ -3,6 +3,9 @@ package com.oa.admin.common.result;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+/**
+ * @author wxvirus
+ */
 
 class RTest {
 

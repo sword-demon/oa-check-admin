@@ -33,6 +33,9 @@ public class LeaveRequestVO {
     /** 状态 */
     private Integer status;
 
+    /** 关联审批实例ID */
+    private Long approvalInstanceId;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

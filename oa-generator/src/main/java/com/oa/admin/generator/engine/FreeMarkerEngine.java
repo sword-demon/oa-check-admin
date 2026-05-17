@@ -10,6 +10,9 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
+/**
+ * @author wxvirus
+ */
 
 public class FreeMarkerEngine {
 

@@ -105,6 +105,12 @@ const router = createRouter({
           meta: { title: '流程指标' },
         },
         {
+          path: 'leave',
+          name: 'LeaveManage',
+          component: () => import('@/views/leave/index.vue'),
+          meta: { title: '请假管理' },
+        },
+        {
           path: 'notification',
           name: 'Notification',
           component: () => import('@/views/notification/index.vue'),

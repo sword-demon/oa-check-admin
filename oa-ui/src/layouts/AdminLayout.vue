@@ -38,6 +38,10 @@
           <el-menu-item index="/approval/my-done">我的已办</el-menu-item>
           <el-menu-item index="/approval/cc">抄送给我的</el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/leave">
+          <el-icon><Calendar /></el-icon>
+          <template #title>请假管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -72,7 +76,7 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import {
-  Odometer, Setting, Document, Fold, Expand, ArrowDown,
+  Odometer, Setting, Document, Calendar, Fold, Expand, ArrowDown,
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

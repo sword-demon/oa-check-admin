@@ -25,10 +25,4 @@ public class LeaveRequestUpdateDTO {
     /** 请假原因 */
     private String reason;
 
-    /** 申请人ID */
-    private Long applicantUserId;
-
-    /** 状态 */
-    private Integer status;
-
 }

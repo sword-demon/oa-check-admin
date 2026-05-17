@@ -5,6 +5,9 @@ import com.oa.admin.approval.dto.CcVO;
 import com.oa.admin.approval.entity.BizApprovalCc;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface ApprovalCcService extends IService<BizApprovalCc> {
 

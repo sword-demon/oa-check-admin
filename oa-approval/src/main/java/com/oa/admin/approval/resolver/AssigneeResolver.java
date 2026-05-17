@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 /**
  * Resolves assignees dynamically from BPMN UEL expressions.
  * Referenced in BPMN as ${assigneeResolver.resolveXxx(...)}.
+ * @author wxvirus
  */
 @Component("assigneeResolver")
 @RequiredArgsConstructor

@@ -1,4 +1,7 @@
 package com.oa.admin.generator.util;
+/**
+ * @author wxvirus
+ */
 
 public final class NamingUtils {
 

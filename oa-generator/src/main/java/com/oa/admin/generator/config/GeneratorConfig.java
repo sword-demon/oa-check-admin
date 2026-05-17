@@ -1,6 +1,9 @@
 package com.oa.admin.generator.config;
 
 import lombok.Data;
+/**
+ * @author wxvirus
+ */
 
 @Data
 public class GeneratorConfig {

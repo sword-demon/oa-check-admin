@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Integration tests for BPMN flow patterns using embedded Flowable engine + H2.
  * Tests: exclusive gateways, parallel gateways, countersign, or-sign, rejection flow.
+ * @author wxvirus
  */
 class FlowableGatewayIntegrationTest {
 

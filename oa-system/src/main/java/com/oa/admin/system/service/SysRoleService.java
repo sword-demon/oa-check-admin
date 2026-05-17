@@ -5,6 +5,9 @@ import com.oa.admin.common.result.PageResult;
 import com.oa.admin.system.entity.SysRole;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface SysRoleService extends IService<SysRole> {
 

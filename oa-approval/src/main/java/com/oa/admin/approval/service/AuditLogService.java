@@ -3,6 +3,9 @@ package com.oa.admin.approval.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.oa.admin.approval.entity.BizAuditLog;
 import com.oa.admin.common.result.PageResult;
+/**
+ * @author wxvirus
+ */
 
 public interface AuditLogService extends IService<BizAuditLog> {
 

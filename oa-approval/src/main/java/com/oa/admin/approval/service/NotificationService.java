@@ -3,6 +3,9 @@ package com.oa.admin.approval.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.oa.admin.approval.entity.BizNotification;
 import com.oa.admin.common.result.PageResult;
+/**
+ * @author wxvirus
+ */
 
 public interface NotificationService extends IService<BizNotification> {
 

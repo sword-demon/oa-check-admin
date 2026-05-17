@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.oa.admin.system.entity.SysDept;
 
 import java.util.List;
+/**
+ * @author wxvirus
+ */
 
 public interface SysDeptService extends IService<SysDept> {
 

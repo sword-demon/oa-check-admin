@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+/**
+ * @author wxvirus
+ */
 
 class CodeGeneratorCrudStackTest {
 

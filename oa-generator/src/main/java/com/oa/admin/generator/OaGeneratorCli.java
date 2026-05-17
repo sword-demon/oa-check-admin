@@ -13,6 +13,9 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true,
         description = "OA Code Generator - generate backend CRUD code from YAML definition",
         version = "0.1.0")
+/**
+ * @author wxvirus
+ */
 public class OaGeneratorCli implements Callable<Integer> {
 
     @CommandLine.Parameters(index = "0", description = "YAML definition file path")
@@ -36,6 +39,10 @@ public class OaGeneratorCli implements Callable<Integer> {
             description = "Only generate Flyway migration script")
     private boolean flywayOnly;
 
+    @Option(names = {"--frontend"},
+            description = "Also generate Vue 3 frontend pages")
+    private boolean frontend;
+
     @Option(names = {"--entity"},
             description = "Only generate specified entities (comma separated)",
             split = ",")
@@ -51,7 +58,8 @@ public class OaGeneratorCli implements Callable<Integer> {
                     targetModule,
                     dryRun,
                     entityFilter,
-                    flywayOnly
+                    flywayOnly,
+                    frontend
             );
             return 0;
         } catch (Exception e) {

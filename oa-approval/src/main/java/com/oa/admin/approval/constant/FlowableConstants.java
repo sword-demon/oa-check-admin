@@ -1,4 +1,7 @@
 package com.oa.admin.approval.constant;
+/**
+ * @author wxvirus
+ */
 
 public final class FlowableConstants {
     public static final String VAR_INITIATOR = "initiator";

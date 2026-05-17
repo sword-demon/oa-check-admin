@@ -14,28 +14,28 @@ import com.oa.admin.common.result.PageResult;
  */
 public interface LeaveRequestService extends IService<LeaveRequest> {
 
-    /**
-     * 分页查询
-     */
     PageResult<LeaveRequestVO> page(LeaveRequestQueryDTO query);
 
-    /**
-     * 详情查询
-     */
     LeaveRequestVO getDetail(Long id);
 
-    /**
-     * 新增
-     */
     LeaveRequestVO create(LeaveRequestCreateDTO request);
 
-    /**
-     * 更新
-     */
     LeaveRequestVO update(Long id, LeaveRequestUpdateDTO request);
 
-    /**
-     * 删除
-     */
     void delete(Long id);
+
+    /**
+     * 提交请假审批
+     */
+    LeaveRequestVO submitForApproval(Long id);
+
+    /**
+     * 驳回后重新编辑并提交
+     */
+    LeaveRequestVO resubmit(Long id, LeaveRequestUpdateDTO dto);
+
+    /**
+     * 审批回调: 更新请假状态
+     */
+    void onApprovalResult(Long leaveRequestId, int approvalResult);
 }

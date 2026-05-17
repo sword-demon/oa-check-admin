@@ -2,6 +2,9 @@ package com.oa.admin.generator.parser;
 
 import java.util.Map;
 import java.util.Set;
+/**
+ * @author wxvirus
+ */
 
 public final class TypeMapper {
 

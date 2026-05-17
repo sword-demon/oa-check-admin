@@ -15,6 +15,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+/**
+ * @author wxvirus
+ */
 
 public class CodeGenerator {
 
@@ -22,7 +25,8 @@ public class CodeGenerator {
     private final FlywayVersionResolver flywayResolver = new FlywayVersionResolver();
 
     public void generate(Path definitionFile, Path projectRoot, String targetModule,
-                         boolean dryRun, List<String> entityFilter, boolean flywayOnly) throws IOException, TemplateException {
+                         boolean dryRun, List<String> entityFilter, boolean flywayOnly,
+                         boolean frontend) throws IOException, TemplateException {
         YamlDefinitionParser parser = new YamlDefinitionParser();
         YamlDefinitionParser.ParseResult result = parser.parse(definitionFile);
         GeneratorConfig config = result.config();
@@ -44,6 +48,10 @@ public class CodeGenerator {
         }
 
         generateFlyway(result.entities(), config, projectRoot, targetModule, dryRun);
+
+        if (frontend) {
+            generateFrontend(result.entities(), entityFilter, config, result.enums(), projectRoot, dryRun);
+        }
 
         System.out.println();
         if (dryRun) {
@@ -147,6 +155,53 @@ public class CodeGenerator {
         }
     }
 
+    private void generateFrontend(List<EntityDefinition> entities, List<String> entityFilter,
+                                   GeneratorConfig config, Map<String, EnumDefinition> enums,
+                                   Path projectRoot, boolean dryRun) throws IOException, TemplateException {
+        Path viewsDir = projectRoot.resolve("oa-ui/src/views/" + config.getModule());
+        Path apiDir = projectRoot.resolve("oa-ui/src/api");
+        String moduleName = config.getModule();
+
+        for (var entity : entities) {
+            if (entityFilter != null && !entityFilter.isEmpty() && !entityFilter.contains(entity.getName())) {
+                continue;
+            }
+            var ctx = GenerationContext.builder()
+                    .config(config)
+                    .entity(entity)
+                    .enums(enums)
+                    .packageName(config.getFullPackage())
+                    .allEntities(entities)
+                    .build();
+
+            Map<String, Object> dataModel = buildDataModel(ctx);
+
+            writeOrPreview(viewsDir.resolve("index.vue"),
+                    templateEngine.render("vue/list.vue.ftl", dataModel), dryRun);
+            writeOrPreview(viewsDir.resolve("components/" + entity.getName() + "FormDialog.vue"),
+                    templateEngine.render("vue/form-dialog.vue.ftl", dataModel), dryRun);
+        }
+
+        var apiCtx = GenerationContext.builder()
+                .config(config)
+                .allEntities(entities)
+                .enums(enums)
+                .packageName(config.getFullPackage())
+                .build();
+        writeOrPreview(apiDir.resolve(moduleName + ".ts"),
+                templateEngine.render("vue/api.ts.ftl", buildDataModel(apiCtx)), dryRun);
+
+        var routeCtx = GenerationContext.builder()
+                .config(config)
+                .allEntities(entities)
+                .enums(enums)
+                .packageName(config.getFullPackage())
+                .build();
+        String routeSnippet = templateEngine.render("vue/route-snippet.ts.ftl", buildDataModel(routeCtx));
+        System.out.println("  --- Route snippet (add to oa-ui/src/router/index.ts) ---");
+        System.out.println(routeSnippet);
+    }
+
     private void printPostInstructions(GeneratorConfig config, String targetModule) {
         System.out.println();
         System.out.println("=== Post-generation steps ===");
@@ -154,7 +209,8 @@ public class CodeGenerator {
         System.out.println("   com.oa.admin." + config.getModule() + ".mapper");
         System.out.println("2. Add permission seed data in sys_permission table for:");
         System.out.println("   " + config.getModule() + ":" + "<resource>:list/query/add/edit/remove");
-        System.out.println("3. Create Vue frontend pages for the module (not auto-generated yet)");
+        System.out.println("3. Add generated route snippet to oa-ui/src/router/index.ts");
+        System.out.println("4. Add sidebar menu entry in oa-ui/src/layouts/AdminLayout.vue");
     }
 
     public static class TypeMapperStaticMethods {

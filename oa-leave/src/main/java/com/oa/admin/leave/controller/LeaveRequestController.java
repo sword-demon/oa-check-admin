@@ -52,4 +52,16 @@ public class LeaveRequestController {
         leaveRequestService.delete(id);
         return R.ok();
     }
+
+    @PostMapping("/{id}/submit")
+    @SaCheckPermission("leave:leave_request:submit")
+    public R<LeaveRequestVO> submitForApproval(@PathVariable Long id) {
+        return R.ok(leaveRequestService.submitForApproval(id));
+    }
+
+    @PostMapping("/{id}/resubmit")
+    @SaCheckPermission("leave:leave_request:edit")
+    public R<LeaveRequestVO> resubmit(@PathVariable Long id, @RequestBody LeaveRequestUpdateDTO request) {
+        return R.ok(leaveRequestService.resubmit(id, request));
+    }
 }
