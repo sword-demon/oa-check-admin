@@ -1,9 +1,12 @@
 package com.oa.admin.leave.enums;
 
+import lombok.Getter;
+
 /**
  * LeaveType enum
  * @author wxvirus
  */
+@Getter
 public enum LeaveType {
     ANNUAL(1, "年假"),
     SICK(2, "病假"),
@@ -17,10 +20,12 @@ public enum LeaveType {
         this.label = label;
     }
 
-    public int getCode() {
-        return code;
-    }
-    public String getLabel() {
-        return label;
+    public static LeaveType fromCode(int code) {
+        for (LeaveType value : values()) {
+            if (value.code == code) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Unknown LeaveType code: " + code);
     }
 }

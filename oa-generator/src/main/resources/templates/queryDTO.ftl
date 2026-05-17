@@ -2,7 +2,9 @@ package ${ctx.packageName}.dto;
 
 <#assign imports = []>
 <#list ctx.entity.searchableFields as f>
-    <#if TypeMapper.getImport(f.type)?? && !(imports?seq_contains(TypeMapper.getImport(f.type)))>
+    <#if f.enumRef?? && !(imports?seq_contains(ctx.packageName + ".enums." + f.enumRef))>
+        <#assign imports = imports + [ctx.packageName + ".enums." + f.enumRef]>
+    <#elseif TypeMapper.getImport(f.type)?? && !(imports?seq_contains(TypeMapper.getImport(f.type)))>
         <#assign imports = imports + [TypeMapper.getImport(f.type)]>
     </#if>
 </#list>
@@ -22,7 +24,7 @@ public class ${ctx.entity.queryDtoName} {
     <#if f.comment??>
     /** ${f.comment} */
     </#if>
-    private ${TypeMapper.getSimpleJavaType(f.type)} ${f.name};
+    private <#if f.enumRef??>${f.enumRef}<#else>${TypeMapper.getSimpleJavaType(f.type)}</#if> ${f.name};
 
 </#list>
     /** 当前页 */

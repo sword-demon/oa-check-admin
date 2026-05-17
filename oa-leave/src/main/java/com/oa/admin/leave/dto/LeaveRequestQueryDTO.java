@@ -1,5 +1,7 @@
 package com.oa.admin.leave.dto;
 
+import com.oa.admin.leave.enums.LeaveStatus;
+import com.oa.admin.leave.enums.LeaveType;
 import lombok.Data;
 
 /**
@@ -13,13 +15,13 @@ public class LeaveRequestQueryDTO {
     private String title;
 
     /** 请假类型 */
-    private Integer leaveType;
+    private LeaveType leaveType;
 
     /** 申请人ID */
     private Long applicantUserId;
 
     /** 状态 */
-    private Integer status;
+    private LeaveStatus status;
 
     /** 当前页 */
     private long page = 1;

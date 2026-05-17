@@ -43,4 +43,17 @@ public enum ${ctx.enumDef.name} {
         return label;
     }
 </#if>
+
+    public static ${ctx.enumDef.name} fromCode(<#if ctx.enumDef.isIntType()>int<#else>String</#if> code) {
+        for (${ctx.enumDef.name} value : values()) {
+<#if ctx.enumDef.isIntType()>
+            if (value.code == code) {
+<#else>
+            if (value.code.equals(code)) {
+</#if>
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ${ctx.enumDef.name} code: " + code);
+    }
 }

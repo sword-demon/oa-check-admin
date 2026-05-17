@@ -1,9 +1,12 @@
 package com.oa.admin.leave.enums;
 
+import lombok.Getter;
+
 /**
  * LeaveStatus enum
  * @author wxvirus
  */
+@Getter
 public enum LeaveStatus {
     DRAFT(0, "草稿"),
     PENDING(1, "审批中"),
@@ -19,10 +22,12 @@ public enum LeaveStatus {
         this.label = label;
     }
 
-    public int getCode() {
-        return code;
-    }
-    public String getLabel() {
-        return label;
+    public static LeaveStatus fromCode(int code) {
+        for (LeaveStatus value : values()) {
+            if (value.code == code) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Unknown LeaveStatus code: " + code);
     }
 }
