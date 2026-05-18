@@ -5,6 +5,7 @@ import router from '@/router'
 const SUCCESS_CODE = 200
 const HTTP_UNAUTHORIZED_STATUS = 401
 const LOGIN_PATH = '/login'
+const AUTH_REQUIRED_MESSAGE = '请先登录'
 const AUTH_EXPIRED_CODES = new Set([2001, 2004])
 
 const request = axios.create({
@@ -43,10 +44,11 @@ request.interceptors.response.use(
   },
   (error) => {
     const responseCode = error.response?.data?.code
-    if (error.response?.status === HTTP_UNAUTHORIZED_STATUS || isAuthExpiredCode(responseCode)) {
+    const authExpired = error.response?.status === HTTP_UNAUTHORIZED_STATUS || isAuthExpiredCode(responseCode)
+    if (authExpired) {
       redirectToLogin()
     }
-    ElMessage.error(error.message || '网络错误')
+    ElMessage.error(authExpired ? AUTH_REQUIRED_MESSAGE : error.message || '网络错误')
     return Promise.reject(error)
   }
 )

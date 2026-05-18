@@ -112,18 +112,21 @@ describe('request interceptor', () => {
     localStorage.setItem('token', 'old-token')
     await import('@/utils/request')
     const { default: router } = await import('@/router')
+    const { ElMessage } = await import('element-plus')
 
     const error = { response: { status: 401 }, message: 'Unauthorized' }
 
     await expect(responseErrorFn(error)).rejects.toThrow('Unauthorized')
     expect(localStorage.getItem('token')).toBeNull()
     expect(router.push).toHaveBeenCalledWith('/login')
+    expect(ElMessage.error).toHaveBeenCalledWith('请先登录')
   })
 
   it('handles token expired code in error response by clearing token and redirecting', async () => {
     localStorage.setItem('token', 'old-token')
     await import('@/utils/request')
     const { default: router } = await import('@/router')
+    const { ElMessage } = await import('element-plus')
 
     const error = {
       response: { status: 200, data: { code: 2004, msg: '登录已过期, 请重新登录' } },
@@ -133,6 +136,7 @@ describe('request interceptor', () => {
     await expect(responseErrorFn(error)).rejects.toThrow('Request failed')
     expect(localStorage.getItem('token')).toBeNull()
     expect(router.push).toHaveBeenCalledWith('/login')
+    expect(ElMessage.error).toHaveBeenCalledWith('请先登录')
   })
 
   it('handles network error without response', async () => {
