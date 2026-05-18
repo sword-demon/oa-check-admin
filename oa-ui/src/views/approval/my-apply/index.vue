@@ -9,20 +9,18 @@
     </section>
 
     <el-card class="page-panel">
-      <div class="page-toolbar">
-        <div class="page-toolbar__filters">
-          <el-input v-model="searchTitle" class="field--lg" placeholder="搜索标题" clearable @clear="loadData" @keyup.enter="loadData" />
-          <el-select v-model="searchStatus" class="field--sm" placeholder="状态" clearable @change="loadData">
+      <div class="toolbar">
+        <div class="search">
+          <el-input v-model="searchTitle" placeholder="搜索标题" clearable style="width: 200px" @clear="handleSearch" @keyup.enter="handleSearch" />
+          <el-select v-model="searchStatus" placeholder="状态" clearable style="width: 120px; margin-left: 10px" @change="handleSearch">
             <el-option label="审批中" :value="ApprovalInstanceStatus.PENDING" />
             <el-option label="通过" :value="ApprovalInstanceStatus.APPROVED" />
             <el-option label="驳回" :value="ApprovalInstanceStatus.REJECTED" />
             <el-option label="已撤回" :value="ApprovalInstanceStatus.WITHDRAWN" />
           </el-select>
+          <el-button type="primary" style="margin-left: 10px" @click="handleSearch">搜索</el-button>
         </div>
-        <div class="page-toolbar__actions">
-          <span class="page-toolbar__meta">共 {{ total }} 条申请</span>
-          <el-button type="primary" @click="submitDialogVisible = true">发起申请</el-button>
-        </div>
+        <el-button type="primary" @click="submitDialogVisible = true">发起申请</el-button>
       </div>
       <el-table :data="instances" stripe v-loading="loading" class="page-table">
         <el-table-column prop="instanceTitle" label="申请标题" />
@@ -145,6 +143,11 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  page.value = 1
+  loadData()
 }
 
 async function loadTemplates() {

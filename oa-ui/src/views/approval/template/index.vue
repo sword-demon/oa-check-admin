@@ -9,13 +9,29 @@
     </section>
 
     <el-card class="page-panel">
-      <div class="page-toolbar">
-        <div class="page-toolbar__filters">
-          <span class="page-toolbar__meta">模板总数 {{ pagination.total }}</span>
+      <div class="toolbar">
+        <div class="search">
+          <el-input
+            v-model="search.templateName"
+            placeholder="模板名称"
+            clearable
+            style="width: 200px"
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
+          />
+          <el-select
+            v-model="search.status"
+            placeholder="状态"
+            clearable
+            style="width: 120px; margin-left: 10px"
+            @change="handleSearch"
+          >
+            <el-option label="草稿" :value="TEMPLATE_STATUS.DRAFT" />
+            <el-option label="已发布" :value="TEMPLATE_STATUS.PUBLISHED" />
+          </el-select>
+          <el-button type="primary" style="margin-left: 10px" @click="handleSearch">搜索</el-button>
         </div>
-        <div class="page-toolbar__actions">
-          <el-button type="primary" @click="openWizard()">创建模板</el-button>
-        </div>
+        <el-button type="primary" @click="openWizard()">创建模板</el-button>
       </div>
       <el-table :data="templates" stripe v-loading="loading" class="page-table">
         <el-table-column prop="templateName" label="模板名称" min-width="140" />
@@ -208,6 +224,10 @@ const loading = ref(false)
 const templates = ref<ProcessTemplate[]>([])
 const wizardVisible = ref(false)
 const pagination = reactive({ page: 1, size: 10, total: 0 })
+const search = reactive({
+  templateName: '',
+  status: undefined as number | undefined,
+})
 const editing = ref<ProcessTemplate | null>(null)
 const activeStep = ref(0)
 const savingDraft = ref(false)
@@ -249,12 +269,22 @@ const previewBpmnXml = computed(() => previewArtifacts.value.bpmnXml)
 async function loadData() {
   loading.value = true
   try {
-    const result = await getTemplates({ page: pagination.page, pageSize: pagination.size })
+    const result = await getTemplates({
+      templateName: search.templateName || undefined,
+      status: search.status,
+      page: pagination.page,
+      pageSize: pagination.size,
+    })
     templates.value = result?.list ?? []
     pagination.total = result?.total ?? 0
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  pagination.page = 1
+  loadData()
 }
 
 async function openWizard(tpl?: ProcessTemplate, step = 0) {

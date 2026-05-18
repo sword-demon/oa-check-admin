@@ -9,13 +9,10 @@
     </section>
 
     <el-card class="page-panel">
-      <div class="page-toolbar">
-        <div class="page-toolbar__filters">
-          <el-input v-model="searchTitle" class="field--lg" placeholder="搜索标题" clearable @clear="loadData" @keyup.enter="loadData" />
-          <el-button type="primary" @click="loadData">搜索</el-button>
-        </div>
-        <div class="page-toolbar__actions">
-          <span class="page-toolbar__meta">当前待办 {{ total }} 条</span>
+      <div class="toolbar">
+        <div class="search">
+          <el-input v-model="searchTitle" placeholder="搜索标题" clearable style="width: 200px" @clear="handleSearch" @keyup.enter="handleSearch" />
+          <el-button type="primary" style="margin-left: 10px" @click="handleSearch">搜索</el-button>
         </div>
       </div>
       <el-table :data="tasks" stripe v-loading="loading" class="page-table">
@@ -147,6 +144,11 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  page.value = 1
+  loadData()
 }
 
 function viewDetail(instanceId: number) {

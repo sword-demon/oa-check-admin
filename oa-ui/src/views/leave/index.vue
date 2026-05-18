@@ -9,21 +9,22 @@
     </section>
 
     <el-card class="page-panel">
-      <div class="page-toolbar">
-        <div class="page-toolbar__filters">
+      <div class="toolbar">
+        <div class="search">
           <el-input
             v-model="search.title"
             placeholder="申请标题"
             clearable
-            class="field--lg"
-            @clear="loadData"
+            style="width: 200px"
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
           />
           <el-select
             v-model="search.leaveType"
             placeholder="请假类型"
             clearable
-            class="field--sm"
-            @change="loadData"
+            style="width: 120px; margin-left: 10px"
+            @change="handleSearch"
           >
             <el-option label="年假" :value="1" />
             <el-option label="病假" :value="2" />
@@ -33,8 +34,8 @@
             v-model="search.status"
             placeholder="状态"
             clearable
-            class="field--sm"
-            @change="loadData"
+            style="width: 120px; margin-left: 10px"
+            @change="handleSearch"
           >
             <el-option label="草稿" :value="0" />
             <el-option label="审批中" :value="1" />
@@ -42,14 +43,11 @@
             <el-option label="已驳回" :value="3" />
             <el-option label="已取消" :value="4" />
           </el-select>
-          <el-button type="primary" @click="loadData">
+          <el-button type="primary" style="margin-left: 10px" @click="handleSearch">
             搜索
           </el-button>
         </div>
-        <div class="page-toolbar__actions">
-          <span class="page-toolbar__meta">当前记录 {{ total }} 条</span>
-          <el-button type="primary" @click="openFormDialog()">新建请假</el-button>
-        </div>
+        <el-button type="primary" @click="openFormDialog()">新建请假</el-button>
       </div>
       <el-table :data="tableData" stripe v-loading="loading" class="page-table">
         <el-table-column prop="title" label="标题" min-width="150" />
@@ -174,6 +172,11 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  page.value = 1
+  loadData()
 }
 
 function openFormDialog(leave?: any) {
