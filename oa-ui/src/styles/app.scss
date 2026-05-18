@@ -104,6 +104,18 @@
   margin-top: 18px;
 }
 
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+}
+
 .field--xs {
   width: 120px;
 }

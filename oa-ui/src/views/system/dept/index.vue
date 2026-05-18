@@ -1,8 +1,28 @@
 <template>
-  <div>
-    <el-card>
+  <div class="page-shell page-shell--dense">
+    <el-card class="page-panel">
       <div class="toolbar">
-        <div></div>
+        <div class="search">
+          <el-input
+            v-model="search.deptName"
+            placeholder="部门名称"
+            clearable
+            style="width: 200px"
+            @clear="loadData"
+            @keyup.enter="loadData"
+          />
+          <el-select
+            v-model="search.status"
+            placeholder="状态"
+            clearable
+            style="width: 120px; margin-left: 10px"
+            @change="loadData"
+          >
+            <el-option label="正常" :value="CommonStatus.ACTIVE" />
+            <el-option label="禁用" :value="CommonStatus.DISABLED" />
+          </el-select>
+          <el-button type="primary" style="margin-left: 10px" @click="loadData">搜索</el-button>
+        </div>
         <el-button type="primary" @click="openDialog()">新增部门</el-button>
       </div>
       <el-table
@@ -10,6 +30,7 @@
         row-key="id"
         :tree-props="{ children: 'children' }"
         v-loading="loading"
+        class="page-table"
         default-expand-all
       >
         <el-table-column prop="deptName" label="部门名称" />
@@ -22,10 +43,10 @@
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-tag
-              :type="row.status === 1 ? 'success' : 'danger'"
+              :type="row.status === CommonStatus.ACTIVE ? 'success' : 'danger'"
               size="small"
             >
-              {{ row.status === 1 ? '正常' : '禁用' }}
+              {{ row.status === CommonStatus.ACTIVE ? '正常' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -80,8 +101,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status">
-            <el-option label="正常" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option label="正常" :value="CommonStatus.ACTIVE" />
+            <el-option label="禁用" :value="CommonStatus.DISABLED" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -98,11 +119,15 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getDeptTree, createDept, updateDept, deleteDept } from '@/api/system'
 import { getUserList } from '@/api/user'
-import type { SysUser } from '@/types'
+import { CommonStatus, type SysDept, type SysUser } from '@/types'
 
 const loading = ref(false)
-const treeData = ref<any[]>([])
+const treeData = ref<SysDept[]>([])
 const userOptions = ref<SysUser[]>([])
+const search = reactive({
+  deptName: '',
+  status: undefined as number | undefined,
+})
 const dialogVisible = ref(false)
 const editingDept = ref<any>(null)
 const form = reactive({
@@ -110,7 +135,7 @@ const form = reactive({
   deptName: '',
   sort: 0,
   leaderUserId: undefined as number | undefined,
-  status: 1,
+  status: CommonStatus.ACTIVE,
 })
 
 function userLabel(user: SysUser) {
@@ -126,7 +151,10 @@ function leaderLabel(leaderUserId?: number | null) {
 async function loadData() {
   loading.value = true
   try {
-    const data: any = await getDeptTree()
+    const data: any = await getDeptTree({
+      deptName: search.deptName || undefined,
+      status: search.status,
+    })
     treeData.value = data || []
   } finally {
     loading.value = false
@@ -135,7 +163,7 @@ async function loadData() {
 
 async function loadUsers() {
   const data: any = await getUserList({
-    status: 1,
+    status: CommonStatus.ACTIVE,
     page: 1,
     pageSize: 200,
   })
@@ -158,7 +186,7 @@ function openDialog(dept?: any, parentId?: number) {
       deptName: '',
       sort: 0,
       leaderUserId: undefined,
-      status: 1,
+      status: CommonStatus.ACTIVE,
     })
   }
   dialogVisible.value = true
@@ -195,7 +223,3 @@ onMounted(() => {
   loadUsers()
 })
 </script>
-
-<style scoped>
-.toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
-</style>

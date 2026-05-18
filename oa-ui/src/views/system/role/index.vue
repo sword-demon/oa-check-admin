@@ -1,11 +1,31 @@
 <template>
-  <div>
-    <el-card>
+  <div class="page-shell page-shell--dense">
+    <el-card class="page-panel">
       <div class="toolbar">
-        <div></div>
+        <div class="search">
+          <el-input
+            v-model="search.roleName"
+            placeholder="角色名称"
+            clearable
+            style="width: 200px"
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
+          />
+          <el-select
+            v-model="search.status"
+            placeholder="状态"
+            clearable
+            style="width: 120px; margin-left: 10px"
+            @change="handleSearch"
+          >
+            <el-option label="正常" :value="CommonStatus.ACTIVE" />
+            <el-option label="禁用" :value="CommonStatus.DISABLED" />
+          </el-select>
+          <el-button type="primary" style="margin-left: 10px" @click="handleSearch">搜索</el-button>
+        </div>
         <el-button type="primary" @click="openDialog()">新增角色</el-button>
       </div>
-      <el-table :data="tableData" stripe v-loading="loading">
+      <el-table :data="tableData" stripe v-loading="loading" class="page-table">
         <el-table-column prop="roleName" label="角色名称" />
         <el-table-column prop="roleKey" label="角色标识" />
         <el-table-column prop="dataScope" label="数据范围">
@@ -21,8 +41,8 @@
         </el-table-column>
         <el-table-column prop="status" label="状态">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '正常' : '禁用' }}
+            <el-tag :type="row.status === CommonStatus.ACTIVE ? 'success' : 'danger'">
+              {{ row.status === CommonStatus.ACTIVE ? '正常' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -40,6 +60,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="page-pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @size-change="loadData"
+          @current-change="loadData"
+        />
+      </div>
     </el-card>
 
     <el-dialog
@@ -64,8 +97,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status">
-            <el-option label="正常" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option label="正常" :value="CommonStatus.ACTIVE" />
+            <el-option label="禁用" :value="CommonStatus.DISABLED" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -100,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { nextTick, ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getRoleList,
@@ -109,17 +142,28 @@ import {
   deleteRole,
   assignPermissions,
   getPermissionTree,
+  getRolePermissionIds,
 } from '@/api/system'
+import { CommonStatus } from '@/types'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
+const total = ref(0)
+const search = reactive({
+  roleName: '',
+  status: undefined as number | undefined,
+})
+const pagination = reactive({
+  page: 1,
+  pageSize: 20,
+})
 const dialogVisible = ref(false)
 const editingRole = ref<any>(null)
 const form = reactive({
   roleName: '',
   roleKey: '',
   dataScope: 1,
-  status: 1,
+  status: CommonStatus.ACTIVE,
 })
 
 const permDialogVisible = ref(false)
@@ -131,11 +175,22 @@ const currentPermRoleId = ref<number>(0)
 async function loadData() {
   loading.value = true
   try {
-    const data: any = await getRoleList()
+    const data: any = await getRoleList({
+      roleName: search.roleName || undefined,
+      status: search.status,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    })
     tableData.value = Array.isArray(data) ? data : data?.list || []
+    total.value = Array.isArray(data) ? data.length : data?.total || 0
   } finally {
     loading.value = false
   }
+}
+
+function handleSearch() {
+  pagination.page = 1
+  loadData()
 }
 
 function openDialog(role?: any) {
@@ -152,7 +207,7 @@ function openDialog(role?: any) {
       roleName: '',
       roleKey: '',
       dataScope: 1,
-      status: 1,
+      status: CommonStatus.ACTIVE,
     })
   }
   dialogVisible.value = true
@@ -186,10 +241,15 @@ async function handleDelete(id: number) {
 
 async function openPermissionDialog(role: any) {
   currentPermRoleId.value = role.id
-  const tree: any = await getPermissionTree()
+  const [tree, permissionIds] = await Promise.all([
+    getPermissionTree(),
+    getRolePermissionIds(role.id),
+  ])
   permTreeData.value = tree || []
-  checkedPermIds.value = role.permissions?.map((p: any) => p.id) || []
+  checkedPermIds.value = permissionIds || []
   permDialogVisible.value = true
+  await nextTick()
+  permTreeRef.value?.setCheckedKeys(checkedPermIds.value, false)
 }
 
 async function handleAssignPermissions() {
@@ -206,7 +266,3 @@ async function handleAssignPermissions() {
 
 onMounted(loadData)
 </script>
-
-<style scoped>
-.toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
-</style>

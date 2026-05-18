@@ -9,6 +9,10 @@ export function getRole(id: number) {
   return request.get(`/system/role/${id}`)
 }
 
+export function getRolePermissionIds(roleId: number) {
+  return request.get<never, number[]>(`/system/role/${roleId}/permissions`)
+}
+
 export function createRole(data: Record<string, any>) {
   return request.post('/system/role', data)
 }
@@ -31,11 +35,11 @@ export function assignDataScope(roleId: number, dataScope: number, deptIds?: num
 
 // Permission APIs
 export function getPermissionTree(status?: number) {
-  return request.get('/system/permission/tree', { params: { status } })
+  return request.get<never, any[]>('/system/permission/tree', { params: { status } })
 }
 
 export function getPermissionList(status?: number) {
-  return request.get('/system/permission', { params: { status } })
+  return request.get<never, any[]>('/system/permission', { params: { status } })
 }
 
 export function createPermission(data: Record<string, any>) {
@@ -51,12 +55,12 @@ export function deletePermission(id: number) {
 }
 
 // Dept APIs
-export function getDeptTree(status?: number) {
-  return request.get('/system/dept/tree', { params: { status } })
+export function getDeptTree(params?: { deptName?: string; status?: number }) {
+  return request.get('/system/dept/tree', { params })
 }
 
-export function getDeptList(parentId?: number) {
-  return request.get('/system/dept', { params: { parentId } })
+export function getDeptList(params?: { parentId?: number; deptName?: string; status?: number }) {
+  return request.get('/system/dept', { params })
 }
 
 export function createDept(data: Record<string, any>) {
