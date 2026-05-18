@@ -84,6 +84,30 @@ describe('request interceptor', () => {
     await expect(responseSuccessFn(response)).rejects.toThrow('系统异常')
   })
 
+  it('handles token expired business code by clearing token and redirecting', async () => {
+    localStorage.setItem('token', 'old-token')
+    await import('@/utils/request')
+    const { default: router } = await import('@/router')
+
+    const response = { data: { code: 2004, msg: '登录已过期, 请重新登录', data: null } }
+
+    await expect(responseSuccessFn(response)).rejects.toThrow('登录已过期')
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(router.push).toHaveBeenCalledWith('/login')
+  })
+
+  it('handles string token expired business code by clearing token and redirecting', async () => {
+    localStorage.setItem('token', 'old-token')
+    await import('@/utils/request')
+    const { default: router } = await import('@/router')
+
+    const response = { data: { code: '2004', msg: '登录已过期, 请重新登录', data: null } }
+
+    await expect(responseSuccessFn(response)).rejects.toThrow('登录已过期')
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(router.push).toHaveBeenCalledWith('/login')
+  })
+
   it('handles 401 error by clearing token and redirecting', async () => {
     localStorage.setItem('token', 'old-token')
     await import('@/utils/request')
@@ -92,6 +116,21 @@ describe('request interceptor', () => {
     const error = { response: { status: 401 }, message: 'Unauthorized' }
 
     await expect(responseErrorFn(error)).rejects.toThrow('Unauthorized')
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(router.push).toHaveBeenCalledWith('/login')
+  })
+
+  it('handles token expired code in error response by clearing token and redirecting', async () => {
+    localStorage.setItem('token', 'old-token')
+    await import('@/utils/request')
+    const { default: router } = await import('@/router')
+
+    const error = {
+      response: { status: 200, data: { code: 2004, msg: '登录已过期, 请重新登录' } },
+      message: 'Request failed',
+    }
+
+    await expect(responseErrorFn(error)).rejects.toThrow('Request failed')
     expect(localStorage.getItem('token')).toBeNull()
     expect(router.push).toHaveBeenCalledWith('/login')
   })
