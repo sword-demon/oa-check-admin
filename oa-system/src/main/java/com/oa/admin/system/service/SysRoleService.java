@@ -13,6 +13,8 @@ public interface SysRoleService extends IService<SysRole> {
 
     PageResult<SysRole> page(String roleName, Integer status, long page, long pageSize);
 
+    List<Long> listPermissionIds(Long roleId);
+
     void assignPermissions(Long roleId, List<Long> permissionIds);
 
     void assignDataScope(Long roleId, Integer dataScope, List<Long> deptIds);

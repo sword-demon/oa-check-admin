@@ -36,6 +36,12 @@ public class SysRoleController {
         return R.ok(roleService.getById(id));
     }
 
+    @GetMapping("/{id}/permissions")
+    @SaCheckPermission("system:role:query")
+    public R<List<Long>> listPermissionIds(@PathVariable Long id) {
+        return R.ok(roleService.listPermissionIds(id));
+    }
+
     @PostMapping
     @SaCheckPermission("system:role:add")
     public R<SysRole> create(@RequestBody SysRole role) {

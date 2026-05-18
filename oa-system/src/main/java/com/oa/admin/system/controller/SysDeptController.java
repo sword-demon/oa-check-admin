@@ -1,7 +1,6 @@
 package com.oa.admin.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.oa.admin.common.result.R;
 import com.oa.admin.system.entity.SysDept;
 import com.oa.admin.system.service.SysDeptService;
@@ -22,21 +21,18 @@ public class SysDeptController {
     @GetMapping("/tree")
     @SaCheckPermission("system:dept:list")
     public R<List<SysDept>> tree(
+            @RequestParam(required = false) String deptName,
             @RequestParam(required = false) Integer status) {
-        return R.ok(deptService.tree(status));
+        return R.ok(deptService.tree(deptName, status));
     }
 
     @GetMapping
     @SaCheckPermission("system:dept:list")
     public R<List<SysDept>> list(
+            @RequestParam(required = false) String deptName,
+            @RequestParam(required = false) Long parentId,
             @RequestParam(required = false) Integer status) {
-        if (status != null) {
-            LambdaQueryWrapper wrapper = new LambdaQueryWrapper<SysDept>()
-                    .eq(SysDept::getStatus, status)
-                    .orderByAsc(SysDept::getSort);
-            return R.ok(deptService.list(wrapper));
-        }
-        return R.ok(deptService.list());
+        return R.ok(deptService.queryList(deptName, status, parentId));
     }
 
     @GetMapping("/{id}")

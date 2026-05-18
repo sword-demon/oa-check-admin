@@ -40,6 +40,15 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    public List<Long> listPermissionIds(Long roleId) {
+        return rolePermissionMapper.selectList(new LambdaQueryWrapper<SysRolePermission>()
+                        .eq(SysRolePermission::getRoleId, roleId))
+                .stream()
+                .map(SysRolePermission::getPermissionId)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         rolePermissionMapper.delete(new LambdaQueryWrapper<SysRolePermission>()

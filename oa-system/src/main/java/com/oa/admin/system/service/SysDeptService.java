@@ -10,7 +10,9 @@ import java.util.List;
 
 public interface SysDeptService extends IService<SysDept> {
 
-    List<SysDept> tree(Integer status);
+    List<SysDept> tree(String deptName, Integer status);
+
+    List<SysDept> queryList(String deptName, Integer status, Long parentId);
 
     List<SysDept> listByParentId(Long parentId);
 }
